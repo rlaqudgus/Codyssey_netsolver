@@ -128,6 +128,42 @@ tcp 22 22 121.135.181.35/32
 
 ---
 
+## 사례 4. Gemini 분석 요청이 응답 없이 시간 초과
+
+| 항목 | 내용 |
+|---|---|
+| **발생 시각** | 2026-11-02 15:45 KST |
+| **증상** | 사진 분석용 AI를 Gemini로 바꾸고(`AI_PROVIDER=gemini`, 기본 모델 `gemini-3.8-flash`) EC2에서 테스트 요청 → **90초 동안 0바이트 수신 후 `curl: (28) Operation timed out`**. 서버 `/api/health`는 `provider: gemini, keyConfigured: true`로 정상 |
+| **원인 가설** | ① EC2에서 Google로 나가는 통신이 막혔다 (SG 아웃바운드·라우팅) ② API 키가 틀렸거나 권한이 없다 ③ 요청 형식(JSON 필드)이 잘못됐다 ④ **해당 모델 자체가 (무료 구간에서) 응답하지 않는다** |
+| **검증 방법** | EC2에서 같은 호스트로 **모델 정보 조회(GET)** → `200`, 연결 0.018초 → ① 기각. 같은 키로 조회가 200 → ② 기각. **내 PC에서도** 같은 생성 요청이 120초 시간 초과 → EC2 문제가 아님. 형식을 그대로 두고 **모델만 바꿔** 비교: `gemini-3.6-flash` 200 (2.3초), `gemini-3.5-flash-lite` 200 (1.3초), `gemini-2.5-flash` 404 ("no longer available to new users") → 형식은 정상이라 ③ 기각, **④ 확정** (가격표에는 무료로 나와 있지만 실제로는 응답 없음) |
+| **조치 내용** | 기본 모델을 `gemini-3.6-flash`로 변경 (`server.js`의 `GEMINI_MODEL` 기본값, `.env.example`, README). 이미지 포함 요청도 200, `finishReason: STOP` (9.4초) 확인 |
+| **결과** | EC2 서버 재배포 후 `/api/health` → `gemini-3.6-flash`, 실제 분석 경로(`/api/analyze`) 200 |
+| **재발 방지** | ① 모델은 문서만 믿지 말고 **작은 요청으로 실측**한 뒤 기본값으로 정한다 ② "시간 초과"는 **네트워크 → 인증 → 형식 → 모델** 순서로 하나씩 바꿔 가며 좁힌다 (한 번에 하나만 변경) ③ 모델은 `GEMINI_MODEL` 환경 변수로 코드 수정 없이 바꿀 수 있게 유지 |
+
+**근거 (로그/명령 출력)**
+
+```text
+# EC2, gemini-3.8-flash generateContent
+http 000 in 90.002398s
+curl: (28) Operation timed out after 90002 milliseconds with 0 bytes received
+
+# EC2 → 같은 호스트 모델 정보 조회 (네트워크·키 정상)
+metadata GET (IPv4): http 200 connect 0.017976s total 0.167566s
+
+# 내 PC에서도 동일 (EC2 문제 아님)
+curl: (28) Operation timed out after 120007 milliseconds with 0 bytes received
+
+# 같은 요청, 모델만 변경
+gemini-3.6-flash         http 200 2.341696s
+gemini-3.5-flash-lite    http 200 1.303413s
+gemini-2.5-flash         http 404  "This model models/gemini-2.5-flash is no longer available to new users."
+
+# gemini-3.6-flash + 이미지 + JSON 모드
+http 200 in 9.359839s   "finishReason": "STOP"
+```
+
+---
+
 ## 부록 A. 증상별 원인 찾기 (이 구조에서 자주 생기는 것)
 
 외부 요청은 **인터넷 → IGW → 라우팅 테이블 → 보안 그룹 → EC2 (Nginx :80) → /api/만 Node :3000** 순서로 지나간다.

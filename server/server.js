@@ -40,7 +40,7 @@ const MAX_OUTPUT = 16000;
 // Which model reads the photo. AI_PROVIDER=claude|gemini; if unset, use whichever key is present (Claude first).
 const PROVIDERS = {
   claude: { keyVar: 'ANTHROPIC_API_KEY', model: process.env.CLAUDE_MODEL || 'claude-opus-5-5', call: callClaude },
-  gemini: { keyVar: 'GEMINI_API_KEY', model: process.env.GEMINI_MODEL || 'gemini-3.8-flash', call: callGemini },
+  gemini: { keyVar: 'GEMINI_API_KEY', model: process.env.GEMINI_MODEL || 'gemini-3.6-flash', call: callGemini },
 };
 const PROVIDER = (process.env.AI_PROVIDER || (process.env.ANTHROPIC_API_KEY ? 'claude' : process.env.GEMINI_API_KEY ? 'gemini' : 'claude')).toLowerCase();
 if (!PROVIDERS[PROVIDER]) { console.error(`Unknown AI_PROVIDER "${PROVIDER}" (use claude or gemini)`); process.exit(1); }

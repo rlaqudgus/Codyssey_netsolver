@@ -92,7 +92,7 @@ curl http://127.0.0.1:3000/api/health   # {"ok":true,"keyConfigured":true}
 |---|---|
 | `AI_PROVIDER` | `gemini` 또는 `claude`. 비우면 키가 있는 쪽 (둘 다 있으면 Claude) |
 | `GEMINI_API_KEY` | Gemini를 쓸 때. https://aistudio.google.com 에서 무료 발급 (무료 구간 데이터는 Google 서비스 개선에 쓰일 수 있음, 하루 호출 한도 있음) |
-| `GEMINI_MODEL` | 선택, 기본 `gemini-3.8-flash` (무료 구간 모델) |
+| `GEMINI_MODEL` | 선택, 기본 `gemini-3.6-flash` (무료 구간 모델. `gemini-3.8-flash`는 2026-11-02 테스트에서 응답 없음 → 트러블슈팅 사례 4) |
 | `ANTHROPIC_API_KEY` | Claude를 쓸 때. https://platform.claude.com 에서 선불 충전 (Claude Pro 구독과 별도 결제) |
 | `CLAUDE_MODEL` | 선택, 기본 `claude-opus-5-5` (분석 1회 약 150~480원) |
 | `ACCESS_CODE` | 선택, 정하면 이 코드를 아는 사람만 분석 가능 |
