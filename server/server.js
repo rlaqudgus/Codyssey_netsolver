@@ -36,6 +36,7 @@ const MAX_BODY = 10 * 1024 * 1024;                           // matches Nginx cl
 const UPSTREAM_TIMEOUT = 280_000;                            // below Nginx proxy_read_timeout 300s
 const TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_OUTPUT = 16000;
+const GEMINI_MAX_OUTPUT = 65536;                             // Gemini 3 thinking tokens count against this budget
 
 // Which model reads the photo. AI_PROVIDER=claude|gemini; if unset, use whichever key is present (Claude first).
 const PROVIDERS = {
@@ -141,7 +142,11 @@ async function callGemini({ image, mediaType, prompt }) {
           { text: prompt },
         ],
       }],
-      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: MAX_OUTPUT },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: GEMINI_MAX_OUTPUT,
+        thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING || 'low' },   // high thinking ran out of tokens (MAX_TOKENS)
+      },
     }),
   });
   const body = await r.json();

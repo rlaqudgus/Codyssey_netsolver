@@ -164,6 +164,38 @@ http 200 in 9.359839s   "finishReason": "STOP"
 
 ---
 
+## 사례 5. 실제 문제 사진 분석 시 "분석 결과를 해석하지 못했습니다"
+
+| 항목 | 내용 |
+|---|---|
+| **발생 시각** | 2026-11-02 15:54 KST |
+| **증상** | 내 브라우저에서 실제 문제 사진으로 분석 → 73초 뒤 화면에 **"분석 결과를 해석하지 못했습니다. 다시 분석해 주세요."** (서버 응답 `502 invalid_json`). 사례 4의 간단한 테스트 이미지는 성공했었음 |
+| **원인 가설** | ① 모델이 JSON이 아닌 설명 글을 섞어 보냈다 ② 사진을 못 읽어 빈 응답을 보냈다 ③ **응답이 출력 한도에 걸려 중간에 잘렸다** (잘린 JSON은 파싱 불가) |
+| **검증 방법** | `journalctl -u net-solver`에서 해당 요청 직전에 서버가 남긴 **`gemini finishReason MAX_TOKENS`** 확인 → 모델이 끝까지 쓰지 못하고 한도(`maxOutputTokens` 16000)에서 멈춤 → ③ 확정 (①이면 `STOP`, ②면 후보 없음/`SAFETY`가 찍힘). Gemini 3 계열은 답을 쓰기 전의 **생각(thinking) 토큰도 같은 한도에서 차감**되기 때문에, 복잡한 사진일수록 생각에 한도를 다 써 버림 |
+| **조치 내용** | `callGemini`에 `thinkingConfig.thinkingLevel: 'low'`(환경 변수 `GEMINI_THINKING`으로 변경 가능) 추가, Gemini 전용 출력 한도를 `65536`으로 상향. 바꾸기 전 작은 요청으로 두 설정을 API가 받아들이는지(200, `STOP`) 먼저 확인 |
+| **결과** | 같은 경로(Nginx → `/api/analyze`)로 정육면체 전개도 문제 그림을 2회 분석 → 둘 다 **200, 12.9초 / 10.9초**, 면 6개·보기 4개 JSON 정상 (이전 73초 후 실패) |
+| **재발 방지** | ① 서버가 `finishReason`이 `STOP`이 아니면 로그에 남기도록 해 둔 덕분에 바로 원인을 찾음 → 외부 API의 **종료 이유는 항상 로그로 남긴다** ② 간단한 테스트 이미지 성공만으로 끝내지 말고 **실제와 비슷한 크기·복잡도의 입력**으로도 시험한다 ③ "생각하는 모델"은 출력 한도에 생각량까지 포함된다는 점을 고려해 한도를 정한다 |
+
+**근거 (로그/명령 출력)**
+
+```text
+# 수정 전 (journalctl -u net-solver)
+Nov 02 06:54:20 node[4270]: gemini finishReason MAX_TOKENS
+Nov 02 06:54:20 node[4270]: POST /api/analyze 502 73100ms ip=<내 PC IP>
+
+# 설정 확인 (작은 요청)
+low     200 1064ms  STOP
+minimal 200 1311ms  STOP
+
+# 수정 후, 같은 경로로 2회
+run1 http 200 12899ms solid=cube faces=6 options=4
+run2 http 200 10855ms solid=cube faces=6 options=4
+Nov 02 06:58:58 node[5093]: POST /api/analyze 200 12833ms ip=127.0.0.1
+Nov 02 06:59:09 node[5093]: POST /api/analyze 200 10847ms ip=127.0.0.1
+```
+
+---
+
 ## 부록 A. 증상별 원인 찾기 (이 구조에서 자주 생기는 것)
 
 외부 요청은 **인터넷 → IGW → 라우팅 테이블 → 보안 그룹 → EC2 (Nginx :80) → /api/만 Node :3000** 순서로 지나간다.
