@@ -12,9 +12,13 @@ AWS EC2 한 대(서울 리전)에 Nginx + Node로 배포합니다.
 | 접속 주소 | **http://43.201.254.210/health** (사이트: http://43.201.254.210) |
 | 확인 명령 | `curl -i http://43.201.254.210/health` |
 | 확인 일시 | 2026-11-02 14:54 KST, 외부(내 PC)에서 200 OK 확인 |
-| 결과 스크린샷 | `docs/img/external-health.png` (+ 선택: `docs/img/external-browser.png`) |
+| 결과 스크린샷 | [docs/img/external-health.png](docs/img/external-health.png) (내 PC 크롬에서 `OK` 확인) |
 | 명령 출력 기록 | [docs/evidence/ec2-instance-checks.txt](docs/evidence/ec2-instance-checks.txt), [docs/evidence/aws-resources.txt](docs/evidence/aws-resources.txt) |
 
+> ⚠️ 주소는 반드시 **`http://`까지** 입력하세요. 스킴 없이 치면 크롬이 `https://`(443)로 먼저 시도하는데, 보안 그룹은 80만 열려 있어 시간 초과가 납니다 ([트러블슈팅 사례 3](docs/troubleshooting.md)).
+>
+> ![external health check](docs/img/external-health.png)
+>
 > 퍼블릭 IP는 인스턴스를 중지/시작하면 바뀌고, 실습 종료 후 리소스를 삭제하면 이 주소는 더 이상 열리지 않습니다.
 
 ```text

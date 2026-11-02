@@ -17,14 +17,14 @@
 | 구분 | ✅ | 🟡 | ⬜ |
 |---|:---:|:---:|:---:|
 | A. 요청 작업 (코드·설정) | 13 | 0 | 0 |
-| B. 최종 결과물 4종 | 2 | 2 | 0 |
+| B. 최종 결과물 4종 | 3 | 1 | 0 |
 | C. 기능 요구사항 | 19 | 1 | 0 |
 | D. 제약 사항 | 7 | 1 | 1 |
 | E. 보너스 | 0 | 2 | 0 |
 
 ### 🙋 남은 일 (사용자님)
 1. **스크린샷 찍기** → `docs/img/`에 저장
-   - (필수) 브라우저 주소창에 `http://43.201.254.210/health` → 화면에 `OK` → `external-health.png`
+   - ~~(필수) 외부 `/health` 화면~~ → ✅ [img/external-health.png](img/external-health.png) 완료
    - (권장) `http://43.201.254.210` 사이트 화면 → `external-browser.png`
    - (권장) IAM → 사용자 `net-solver-lab` → 권한 탭 (관리자 권한 없음) → `iam-user.png`
    - (권장) EC2 → 보안 그룹 `net-solver-sg` → 인바운드 규칙 → `security-group.png`
@@ -77,8 +77,8 @@ Node 24.18.1(Cursor 내장)과 Node 20.15.1(RStudio 내장)로 실행.
 | # | 결과물 | 제출 규격 | 상태 | 근거 / 남은 일 |
 |---|---|---|:---:|---|
 | B1 | 아키텍처 다이어그램 | `docs/architecture.(png\|pdf)` 1개. VPC·Subnet·IGW·EC2·SG + 외부→서비스 흐름 | ✅ | [architecture.png](architecture.png): 실제 IP·IGW ID 반영 |
-| B2 | 외부 접속 증빙 | README에 방식(A/B) + URL/IP, 스크린샷 1장+ | 🟡 | README에 **(B) `http://43.201.254.210/health`** 기재, 외부 200 OK 확인 완료 → **스크린샷만 남음** |
-| B3 | 트러블슈팅 보고서 | `docs/troubleshooting.(md\|pdf)`, 6단계 최소 1건 | ✅ | [troubleshooting.md](troubleshooting.md): **실제 사례 2건** (설치 직후 502, 부팅 직후 404) |
+| B2 | 외부 접속 증빙 | README에 방식(A/B) + URL/IP, 스크린샷 1장+ | ✅ | README에 **(B) `http://43.201.254.210/health`** 기재 + 스크린샷 [img/external-health.png](img/external-health.png) (내 PC 크롬, `OK`) |
+| B3 | 트러블슈팅 보고서 | `docs/troubleshooting.(md\|pdf)`, 6단계 최소 1건 | ✅ | [troubleshooting.md](troubleshooting.md): **실제 사례 3건** (설치 직후 502, 부팅 직후 404, 브라우저 HTTPS 자동 전환으로 시간 초과) |
 | B4 | 리소스 정리 체크리스트 | `docs/cleanup-checklist.md` (+선택 Billing 스크린샷) | 🟡 | 생성한 리소스 ID 전부 기록 완료 → **실습 끝나고 삭제 후 근거 채우기** |
 
 ---
@@ -161,8 +161,8 @@ Node 24.18.1(Cursor 내장)과 Node 20.15.1(RStudio 내장)로 실행.
 
 - [x] `docs/architecture.png` — 실제 구성(IP·IGW ID)과 일치
 - [x] README에 실제 IP와 선택 방식 (B) 기재
-- [ ] `docs/img/`에 외부 접속 스크린샷 (+보너스 시 `docker ps`)
-- [x] `docs/troubleshooting.md`에 **실제 사례** 2건, 6단계 모두 채움
+- [x] `docs/img/`에 외부 접속 스크린샷 (+보너스 시 `docker ps`)
+- [x] `docs/troubleshooting.md`에 **실제 사례** 3건, 6단계 모두 채움
 - [ ] `docs/cleanup-checklist.md` 정리 근거 채움, EC2·EBS·EIP·IGW·VPC 삭제 확인
 - [x] `git status`에 `.env`, `.pem`이 안 보임
 - [ ] Billing 확인, 실습용 액세스 키 삭제

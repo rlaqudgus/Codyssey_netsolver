@@ -91,6 +91,43 @@ Server: nginx
 
 ---
 
+## 사례 3. 내 브라우저에서만 접속 시간 초과 (`ERR_CONNECTION_TIMED_OUT`)
+
+| 항목 | 내용 |
+|---|---|
+| **발생 시각** | 2026-11-02 15:05 KST 무렵 |
+| **증상** | 크롬 주소창에 `43.201.254.210/health`(앞에 `http://` 없이)를 입력 → **"사이트에 연결할 수 없음 / 응답하는 데 시간이 너무 오래 걸립니다 / ERR_CONNECTION_TIMED_OUT"**. 같은 시각 `curl`로는 정상이었음 |
+| **원인 가설** | ① 인스턴스가 중지되었거나 퍼블릭 IP가 바뀌었다 ② 보안 그룹/네트워크가 내 PC의 접속을 막는다 ③ 브라우저가 주소를 **`https://`(443 포트)로 자동 변환**했는데, SG에는 443이 없어 패킷이 조용히 버려졌다 |
+| **검증 방법** | `aws ec2 describe-instances` → `running`, IP `43.201.254.210` 그대로 → ① 기각. 같은 PC에서 `curl http://43.201.254.210/health` → **200 (0.055초)** → 경로와 SG 80은 정상, ② 기각. `curl https://43.201.254.210/health` → **응답 없음(exit 28, 시간 초과)**. SG 인바운드는 80·22뿐 → 443 요청은 SG가 응답 없이 버림 → 증상(시간 초과)과 일치, **③ 확정**. 근거: 최신 크롬은 스킴 없이 입력한 주소를 먼저 HTTPS로 시도함 |
+| **조치 내용** | 주소를 **`http://43.201.254.210/health`로 스킴까지 명시**해서 입력. 크롬의 "안전하지 않음" 경고에서 사이트로 계속 이동 (비밀번호 입력이 없는 페이지라 위험 낮음). SG에 443을 여는 것은 하지 않음: 열어도 Nginx에 인증서가 없어 오류만 바뀌고, 필요 없는 포트를 여는 것은 최소 허용 원칙에 어긋남 |
+| **결과** | 브라우저에 **`OK`** 표시 (주소창 "주의 요함" = HTTP 접속). 스크린샷: [img/external-health.png](img/external-health.png) |
+| **재발 방지** | ① README 접속 안내에 **`http://`를 반드시 붙이라**고 명시 ② "시간 초과"면 먼저 **어느 포트로 갔는지**(http 80 / https 443) 확인 ③ 장기적으로는 도메인 + Let's Encrypt로 HTTPS 적용(보너스 1) 후 SG에 443 추가 |
+
+**근거 (로그/명령 출력)**
+
+```text
+# 브라우저 (스킴 없이 입력)
+사이트에 연결할 수 없음 — 43.201.254.210에서 응답하는 데 시간이 너무 오래 걸립니다.  ERR_CONNECTION_TIMED_OUT
+
+# 같은 PC에서 비교
+$ curl -s -o /dev/null -w '%{http_code} (%{time_total}s)\n' http://43.201.254.210/health
+200 (0.055362s)
+$ curl -s -m 8 https://43.201.254.210/health
+(응답 없음, curl exit 28 = timeout)
+
+# 인스턴스 상태
+$ aws ec2 describe-instances --instance-ids i-00eb66dc541b0a140 --query "...[State.Name,PublicIpAddress]"
+running   43.201.254.210
+
+# 보안 그룹 인바운드 (443 없음)
+tcp 80 80 0.0.0.0/0
+tcp 22 22 121.135.181.35/32
+```
+
+**스크린샷**: [img/external-health.png](img/external-health.png) (조치 후)
+
+---
+
 ## 부록 A. 증상별 원인 찾기 (이 구조에서 자주 생기는 것)
 
 외부 요청은 **인터넷 → IGW → 라우팅 테이블 → 보안 그룹 → EC2 (Nginx :80) → /api/만 Node :3000** 순서로 지나간다.
@@ -99,6 +136,7 @@ Server: nginx
 | 증상 | 어디서 끊겼나 | 먼저 볼 것 | 흔한 원인 |
 |---|---|---|---|
 | `ssh` / `curl`이 **응답 없이 시간 초과** | 네트워크 (Nginx까지 못 옴) | SG 인바운드, 라우팅 테이블, 퍼블릭 IP | SG에 80/22 없음, 22의 소스가 바뀐 내 IP와 다름, `0.0.0.0/0 → igw` 경로 없음, 퍼블릭 IP 미할당 |
+| 브라우저만 **시간 초과**, `curl http://`는 정상 | 브라우저가 https(443)로 감 | 주소창 스킴, `curl https://...` | SG에 443 없음 + 크롬의 HTTPS 자동 시도 → `http://` 명시 (사례 3) |
 | `Connection refused` | EC2까지 왔지만 80을 듣는 프로세스 없음 | `sudo systemctl status nginx`, `sudo ss -tlnp` | Nginx 미설치/중지, 설정 오류로 시작 실패 |
 | `/health`는 OK, `/api/...`가 **502 Bad Gateway** | Nginx → Node 구간 | `journalctl -u net-solver -n 50`, `curl 127.0.0.1:3000/api/health` | Node 서비스 중지, 포트 불일치, `.env` 권한 문제로 크래시 |
 | 분석 중 **504 Gateway Time-out** | Nginx가 Node 응답을 기다리다 포기 | Nginx error.log의 `upstream timed out` | `proxy_read_timeout`이 기본 60s |
