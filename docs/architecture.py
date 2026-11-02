@@ -33,7 +33,7 @@ box(30, 10, 100, 58, "#e8f5ec", GREEN, 2); text(32, 67, "Public Subnet  10.0.1.0
 # Route table
 box(94, 50, 33, 13, "#ffffff", GREEN, 1.4)
 text(96, 62, "Route Table (public-rt)", 9.5, "bold", GREEN)
-text(96, 58.5, "10.0.0.0/16  →  local\n0.0.0.0/0    →  igw-xxxx", 9, color="#1c1c1c")
+text(96, 58.5, "10.0.0.0/16  →  local\n0.0.0.0/0    →  igw-038259e638b1cc5bf", 9, color="#1c1c1c")
 
 # Security group
 box(34, 13, 58, 47, "#fff6f5", RED, 2, (0, (6, 3)))
@@ -43,7 +43,7 @@ text(36, 55.5, "IN  80/tcp   ← 0.0.0.0/0\nIN  22/tcp   ← 내 IP/32 만\nOUT 
 # EC2
 box(38, 16, 50, 27, "#ffffff", ORANGE, 2)
 text(40, 42, "EC2  t3.micro · Ubuntu LTS · EBS 8GiB gp3", 10, "bold", ORANGE)
-text(40, 38.8, "퍼블릭 IP  x.x.x.x  /  프라이빗 IP 10.0.1.x", 8.5, color=GRAY)
+text(40, 38.8, "퍼블릭 IP 43.201.254.210  /  프라이빗 IP 10.0.1.206", 8.5, color=GRAY)
 box(40, 19, 21, 15, "#fff3e6", ORANGE, 1.4)
 text(41.2, 33, "Nginx  :80", 10, "bold")
 text(41.2, 29.5, "/health → 200 \"OK\"\npublic/ 정적 파일\n/api/ → 프록시", 8.3)
@@ -67,7 +67,7 @@ text(143.5, 26.5, "api.anthropic.com:443\nHTTPS 아웃바운드", 8.5, color=GRA
 
 # Flows
 arrow((10, 62), (8, 45.2), BLUE, 2.4)                    # user -> internet
-text(11.5, 56, "① HTTP :80\nhttp://x.x.x.x", 8.5, color=BLUE)
+text(11.5, 56, "① HTTP :80\nhttp://43.201.254.210", 8.5, color=BLUE)
 arrow((10, 20), (7, 36), "#7a3db8", 2, (0, (4, 2)))      # admin -> internet
 text(11.2, 27, "SSH :22", 8.5, color="#7a3db8")
 arrow((12, 40.5), (14, 40.5), BLUE, 2.4)                 # internet -> igw

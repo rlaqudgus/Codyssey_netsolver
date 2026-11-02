@@ -1,0 +1,66 @@
+# AWS resource evidence (aws-cli, ap-northeast-2), captured 2026-11-02 14:55 KST by IAM user net-solver-lab
+
+## caller identity
+arn:aws:iam::<account>:user/net-solver-lab
+
+## VPC
+-------------------------------------------------------
+|                    DescribeVpcs                     |
++------------------------+---------------+------------+
+|  vpc-0ca361fd25c910867 |  10.0.0.0/16  |  available |
++------------------------+---------------+------------+
+
+## Subnet
+------------------------------------------------------------------------
+|                            DescribeSubnets                           |
++---------------------------+--------------+-------------------+-------+
+|  subnet-030d49d1a95fe9ff7 |  10.0.1.0/24 |  ap-northeast-2a  |  True |
++---------------------------+--------------+-------------------+-------+
+
+## Internet Gateway
+----------------------------------------
+|       DescribeInternetGateways       |
++------------------------+-------------+
+|  vpc-0ca361fd25c910867 |  available  |
++------------------------+-------------+
+
+## Route table routes + association
+----------------------------------------------------
+|                DescribeRouteTables               |
++--------------+-------------------------+---------+
+|  10.0.0.0/16 |  local                  |  active |
+|  0.0.0.0/0   |  igw-038259e638b1cc5bf  |  active |
++--------------+-------------------------+---------+
+--------------------------------------------
+|            DescribeRouteTables           |
++---------------------------+--------------+
+|  subnet-030d49d1a95fe9ff7 |  associated  |
++---------------------------+--------------+
+
+## Security group inbound
+---------------------------------------------------------
+|                DescribeSecurityGroups                 |
++-----+-----+-----+---------------------+---------------+
+|  tcp|  80 |  80 |  0.0.0.0/0          |  HTTP-public  |
+|  tcp|  22 |  22 |  121.135.181.35/32  |  SSH-my-IP    |
++-----+-----+-----+---------------------+---------------+
+
+## Instance
+------------------------------------------------------------------------------------------------------------
+|                                             DescribeInstances                                            |
++---------------------+-----------+----------+----------------------------+-----------------+--------------+
+|  i-00eb66dc541b0a140|  t3.micro |  running |  subnet-030d49d1a95fe9ff7  |  43.201.254.210 |  10.0.1.206  |
++---------------------+-----------+----------+----------------------------+-----------------+--------------+
+
+## EBS
+-------------------------------------------------
+|                DescribeVolumes                |
++------------------------+----+------+----------+
+|  vol-0a9640545ec87f5b0 |  8 |  gp3 |  in-use  |
++------------------------+----+------+----------+
+
+## Region restriction (us-east-1 call must be denied)
+ 
+aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the DescribeVpcs operation: You are not authorized
+ to perform this operation. User: arn:aws:iam::<account>:user/net-solver-lab is not authorized to perform: ec2:Descr
+ibeVpcs with an explicit deny in an identity-based policy: arn:aws:iam::<account>:policy/net-solver-lab-policy

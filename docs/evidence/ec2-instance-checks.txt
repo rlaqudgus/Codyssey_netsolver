@@ -1,0 +1,35 @@
++ date -u
+Mon Nov  2 05:55:24 UTC 2026
++ curl -s -o /dev/null -w '%{http_code}\n' http://localhost/
+200
++ curl -s -i http://localhost/health
+HTTP/1.1 200 OK
+Server: nginx
+Date: Mon, 02 Nov 2026 05:55:24 GMT
+Content-Type: text/plain
+Content-Length: 2
+Connection: keep-alive
+
+OK+ curl -s http://127.0.0.1:3000/api/health
+{"ok":true,"keyConfigured":false}
++ echo
++ curl -s -o /dev/null -w '%{http_code}\n' https://example.com
+200
++ systemctl is-active nginx net-solver
+active
+active
++ sudo ss -tlnp
++ grep -E ':(80|3000) '
+LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:(("nginx",pid=3150,fd=5),("nginx",pid=3149,fd=5),("nginx",pid=1808,fd=5))
+LISTEN 0      511        127.0.0.1:3000      0.0.0.0:*    users:(("node",pid=3252,fd=21))                                                
+LISTEN 0      511             [::]:80           [::]:*    users:(("nginx",pid=3150,fd=6),("nginx",pid=3149,fd=6),("nginx",pid=1808,fd=6))
++ sudo nginx -t
+    inet 10.0.1.206/24 metric 100 brd 10.0.1.255 scope global dynamic ens5
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
++ ip -4 addr show ens5
++ grep inet
+++ curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60'
++ curl -s -H 'X-aws-ec2-metadata-token: <redacted>' http://169.254.169.254/latest/meta-data/public-ipv4
+43.201.254.210
++ echo

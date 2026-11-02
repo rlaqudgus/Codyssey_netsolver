@@ -33,6 +33,9 @@ sudo cp "$SRC_DIR/deploy/net-solver.service" /etc/systemd/system/net-solver.serv
 sudo systemctl daemon-reload
 sudo systemctl enable --now net-solver
 
+# systemctl returns before Node is listening; checking right away gave a false 502 (docs/troubleshooting.md, case 1).
+for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:3000/api/health && break; sleep 1; done
+
 echo "--- checks ---"
 curl -s -o /dev/null -w 'localhost /        -> %{http_code}\n' http://localhost/
 curl -s -w '  (%{http_code})\n'                http://localhost/health

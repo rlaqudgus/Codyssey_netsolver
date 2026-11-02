@@ -9,9 +9,13 @@ AWS EC2 한 대(서울 리전)에 Nginx + Node로 배포합니다.
 | 항목 | 값 |
 |---|---|
 | **선택한 방식** | **(B) `GET http://<퍼블릭IP>/health` → `200 OK` / `OK`** (참고: (A) 브라우저 `http://<퍼블릭IP>`로도 사이트가 열림) |
-| 접속 주소 | `http://__.__.__.__/health` ← 배포 후 퍼블릭 IP(또는 Elastic IP)로 바꿔 적기 |
-| 확인 명령 | `curl -i http://__.__.__.__/health` |
+| 접속 주소 | **http://43.201.254.210/health** (사이트: http://43.201.254.210) |
+| 확인 명령 | `curl -i http://43.201.254.210/health` |
+| 확인 일시 | 2026-11-02 14:54 KST, 외부(내 PC)에서 200 OK 확인 |
 | 결과 스크린샷 | `docs/img/external-health.png` (+ 선택: `docs/img/external-browser.png`) |
+| 명령 출력 기록 | [docs/evidence/ec2-instance-checks.txt](docs/evidence/ec2-instance-checks.txt), [docs/evidence/aws-resources.txt](docs/evidence/aws-resources.txt) |
+
+> 퍼블릭 IP는 인스턴스를 중지/시작하면 바뀌고, 실습 종료 후 리소스를 삭제하면 이 주소는 더 이상 열리지 않습니다.
 
 ```text
 기대 결과
