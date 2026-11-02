@@ -45,8 +45,8 @@ EC2 안:  Nginx :80 ─┬─ /health  → 200 "OK" (Nginx가 직접 응답)
 ```
 public/index.html        화면 (업로드, 결과, 3D 뷰어, 보기 대조)
 public/engine.js         전개도 해석·접기·보기 대조 엔진 (브라우저에서 실행)
-server/server.js         API 서버 (Node 기본 모듈만 사용): 사진을 Claude API로 보내 JSON을 받아 옴
-server/prompt.js         Claude에게 보내는 지시문 (인식 품질은 여기서 조정)
+server/server.js         API 서버 (Node 기본 모듈만 사용): 사진을 Claude 또는 Gemini API로 보내 JSON을 받아 옴
+server/prompt.js         AI에게 보내는 지시문 (두 AI 공통, 인식 품질은 여기서 조정)
 deploy/nginx.conf        Nginx 사이트 설정 (/health, /api 프록시, 10m 업로드, 300s 타임아웃)
 deploy/net-solver.service  systemd 서비스 (Node를 127.0.0.1:3000에서 실행)
 deploy/Dockerfile        (보너스) API 컨테이너 이미지
@@ -62,7 +62,7 @@ API 키는 EC2의 `.env`(권한 600)에만 있고 브라우저로는 절대 나�
 Node 18 이상만 있으면 됩니다 (`npm install` 불필요).
 
 ```bash
-cp .env.example .env        # ANTHROPIC_API_KEY 채우기 (예시 문제만 볼 거면 생략 가능)
+cp .env.example .env        # GEMINI_API_KEY 또는 ANTHROPIC_API_KEY 채우기 (예시 문제만 볼 거면 생략 가능)
 node server/server.js --static
 ```
 
@@ -90,8 +90,11 @@ curl http://127.0.0.1:3000/api/health   # {"ok":true,"keyConfigured":true}
 
 | 환경 변수 | 설명 |
 |---|---|
-| `ANTHROPIC_API_KEY` | 필수 |
-| `CLAUDE_MODEL` | 선택, 기본 `claude-opus-5-5` |
+| `AI_PROVIDER` | `gemini` 또는 `claude`. 비우면 키가 있는 쪽 (둘 다 있으면 Claude) |
+| `GEMINI_API_KEY` | Gemini를 쓸 때. https://aistudio.google.com 에서 무료 발급 (무료 구간 데이터는 Google 서비스 개선에 쓰일 수 있음, 하루 호출 한도 있음) |
+| `GEMINI_MODEL` | 선택, 기본 `gemini-3.8-flash` (무료 구간 모델) |
+| `ANTHROPIC_API_KEY` | Claude를 쓸 때. https://platform.claude.com 에서 선불 충전 (Claude Pro 구독과 별도 결제) |
+| `CLAUDE_MODEL` | 선택, 기본 `claude-opus-5-5` (분석 1회 약 150~480원) |
 | `ACCESS_CODE` | 선택, 정하면 이 코드를 아는 사람만 분석 가능 |
 | `RATE_PER_10MIN` | 선택, IP당 10분에 허용할 분석 횟수, 기본 10 |
 | `HOST` / `PORT` | 선택, 기본 `127.0.0.1` / `3000` |

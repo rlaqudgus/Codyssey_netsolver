@@ -1,6 +1,6 @@
-// Dependency-free Node HTTP server: photo -> Claude -> net/option JSON.
+// Dependency-free Node HTTP server: photo -> Claude or Gemini -> net/option JSON.
 // On EC2, Nginx serves public/ and /health and proxies only /api/ here (127.0.0.1:3000).
-// The API key stays on the server (.env ANTHROPIC_API_KEY); the browser never sees it.
+// API keys stay on the server (.env ANTHROPIC_API_KEY / GEMINI_API_KEY); the browser never sees them.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,13 +29,23 @@ const envLoaded = loadEnv(process.env.ENV_FILE || path.join(ROOT, '.env'));
 
 const HOST = process.env.HOST || '127.0.0.1';                // never 0.0.0.0 on the EC2 host itself
 const PORT = Number(process.env.PORT || 3000);
-const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5';
 const ACCESS_CODE = process.env.ACCESS_CODE || '';          // optional: set to require a code
 const SERVE_STATIC = process.argv.includes('--static') || process.env.SERVE_STATIC === '1'; // local dev only: imitate Nginx
 const MAX_B64 = 4_000_000;                                   // ~3 MB image
 const MAX_BODY = 10 * 1024 * 1024;                           // matches Nginx client_max_body_size 10m
 const UPSTREAM_TIMEOUT = 280_000;                            // below Nginx proxy_read_timeout 300s
 const TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_OUTPUT = 16000;
+
+// Which model reads the photo. AI_PROVIDER=claude|gemini; if unset, use whichever key is present (Claude first).
+const PROVIDERS = {
+  claude: { keyVar: 'ANTHROPIC_API_KEY', model: process.env.CLAUDE_MODEL || 'claude-opus-5-5', call: callClaude },
+  gemini: { keyVar: 'GEMINI_API_KEY', model: process.env.GEMINI_MODEL || 'gemini-3.8-flash', call: callGemini },
+};
+const PROVIDER = (process.env.AI_PROVIDER || (process.env.ANTHROPIC_API_KEY ? 'claude' : process.env.GEMINI_API_KEY ? 'gemini' : 'claude')).toLowerCase();
+if (!PROVIDERS[PROVIDER]) { console.error(`Unknown AI_PROVIDER "${PROVIDER}" (use claude or gemini)`); process.exit(1); }
+const AI = PROVIDERS[PROVIDER];
+const apiKey = () => process.env[AI.keyVar];
 
 // Best-effort in-memory rate limit (one process, so this is accurate until restart).
 const hits = new Map();
@@ -84,9 +94,70 @@ function clientIp(req) {
   return String(req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown');
 }
 
+// Upstream failures are thrown as { status, code } and passed straight to the browser.
+function upstreamError(name, r, body) {
+  console.error(`${name} error`, r.status, JSON.stringify(body));
+  return r.status === 429 ? { status: 429, code: 'rate_limited' } : { status: 502, code: 'upstream_error' };
+}
+
+async function callClaude({ image, mediaType, prompt }) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT),
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey(),
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: AI.model,
+      max_tokens: MAX_OUTPUT,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
+          { type: 'text', text: prompt },
+        ],
+      }],
+    }),
+  });
+  const body = await r.json();
+  if (!r.ok) throw upstreamError('anthropic', r, body);
+  return (body.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+}
+
+// Gemini generateContent (REST). Free tier: data may be used by Google to improve its products.
+async function callGemini({ image, mediaType, prompt }) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI.model)}:generateContent`;
+  const r = await fetch(url, {
+    method: 'POST',
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT),
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey() },
+    body: JSON.stringify({
+      contents: [{
+        role: 'user',
+        parts: [
+          { inline_data: { mime_type: mediaType, data: image } },
+          { text: prompt },
+        ],
+      }],
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: MAX_OUTPUT },
+    }),
+  });
+  const body = await r.json();
+  if (!r.ok) throw upstreamError('gemini', r, body);
+  const cand = (body.candidates || [])[0];
+  if (!cand) {
+    console.error('gemini blocked', JSON.stringify(body.promptFeedback || body));
+    throw { status: 502, code: 'upstream_error' };
+  }
+  if (cand.finishReason && cand.finishReason !== 'STOP') console.error('gemini finishReason', cand.finishReason);
+  return ((cand.content && cand.content.parts) || []).filter(p => p.text && !p.thought).map(p => p.text).join('\n');
+}
+
 async function analyze(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
-  if (!process.env.ANTHROPIC_API_KEY) return send(res, 500, { error: 'not_configured' });
+  if (!apiKey()) return send(res, 500, { error: 'not_configured' });
 
   let payload;
   try { payload = await readJson(req); } catch (e) { return send(res, e.status, { error: e.code }); }
@@ -98,37 +169,13 @@ async function analyze(req, res) {
   if (!TYPES.includes(mediaType)) return send(res, 400, { error: 'image_rejected' });
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT),
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 16000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
-            { type: 'text', text: buildPrompt(String(memo).slice(0, 1000)) },
-          ],
-        }],
-      }),
-    });
-    const body = await r.json();
-    if (!r.ok) {
-      console.error('anthropic error', r.status, JSON.stringify(body));
-      return send(res, r.status === 429 ? 429 : 502, { error: r.status === 429 ? 'rate_limited' : 'upstream_error' });
-    }
-    const text = (body.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+    const text = await AI.call({ image, mediaType, prompt: buildPrompt(String(memo).slice(0, 1000)) });
     const data = extractJson(text);
     if (!data) return send(res, 502, { error: 'invalid_json' });
     // The photo is not stored anywhere: it only passes through this request.
     return send(res, 200, { data });
   } catch (e) {
+    if (e && e.status && e.code) return send(res, e.status, { error: e.code });
     console.error('analyze failed:', e && e.name, e && e.message);
     return send(res, e && e.name === 'TimeoutError' ? 504 : 502, { error: 'upstream_error' });
   }
@@ -156,7 +203,7 @@ const server = http.createServer(async (req, res) => {
   res.on('finish', () => console.log(`${req.method} ${pathname} ${res.statusCode} ${Date.now() - t0}ms ip=${clientIp(req)}`));
   try {
     if (pathname === '/api/analyze') return await analyze(req, res);
-    if (pathname === '/api/health') return send(res, 200, { ok: true, keyConfigured: Boolean(process.env.ANTHROPIC_API_KEY) });
+    if (pathname === '/api/health') return send(res, 200, { ok: true, provider: PROVIDER, model: AI.model, keyConfigured: Boolean(apiKey()) });
     if (SERVE_STATIC && !pathname.startsWith('/api/')) return serveStatic(req, res, pathname);
     return send(res, 404, { error: 'not_found' });
   } catch (e) {
@@ -166,7 +213,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`net-solver API listening on http://${HOST}:${PORT} (model ${MODEL}, .env ${envLoaded ? 'loaded' : 'not found'}, key ${process.env.ANTHROPIC_API_KEY ? 'set' : 'MISSING'}${SERVE_STATIC ? ', serving public/ + /health' : ''})`);
+  console.log(`net-solver API listening on http://${HOST}:${PORT} (${PROVIDER} ${AI.model}, .env ${envLoaded ? 'loaded' : 'not found'}, ${AI.keyVar} ${apiKey() ? 'set' : 'MISSING'}${SERVE_STATIC ? ', serving public/ + /health' : ''})`);
 });
 
 // systemd / docker stop send SIGTERM: finish in-flight requests, then exit.
