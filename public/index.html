@@ -144,7 +144,7 @@ function shrink(dataURL,max=1568){return new Promise((res,rej)=>{const img=new I
   const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');
   c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
   res(c.toDataURL('image/jpeg',.88).split(',')[1]);};img.onerror=()=>rej({code:'image_rejected'});img.src=dataURL;});}
-const ERR={code_required:'접근 코드가 맞지 않습니다.',rate_limited:'요청이 많습니다. 잠시 후 다시 시도하세요.',too_large:'사진이 너무 큽니다. 다시 찍어 올려 주세요.',
+const ERR={code_required:'접근 코드가 맞지 않습니다.',rate_limited:'요청이 많습니다. 잠시 후 다시 시도하세요.',quota_exceeded:'오늘 쓸 수 있는 무료 분석 횟수를 모두 썼습니다. 매일 오후 4~5시(한국 시간)에 다시 채워집니다. 그동안은 "예시 문제로 보기"로 확인해 보세요.',too_large:'사진이 너무 큽니다. 다시 찍어 올려 주세요.',
   image_rejected:'이 사진은 읽을 수 없습니다. JPG나 PNG로 다시 찍어 올려 주세요.',invalid_json:'분석 결과를 해석하지 못했습니다. 다시 분석해 주세요.',
   upstream_error:'분석 서버에 문제가 생겼습니다. 잠시 후 다시 시도하세요.',not_configured:'서버에 API 키가 설정되지 않았습니다.'};
 function setStatus(t,err){$('status').textContent=t;$('status').className='status'+(err?' err':'');}

@@ -118,7 +118,9 @@ function clientIp(req) {
 // Upstream failures are thrown as { status, code } and passed straight to the browser.
 function upstreamError(name, r, body) {
   console.error(`${name} error`, r.status, JSON.stringify(body));
-  return r.status === 429 ? { status: 429, code: 'rate_limited' } : { status: 502, code: 'upstream_error' };
+  if (r.status !== 429) return { status: 502, code: 'upstream_error' };
+  // Gemini free tier has a small daily request cap; tell the user it is a daily limit, not a short wait.
+  return /per ?day/i.test(JSON.stringify(body)) ? { status: 429, code: 'quota_exceeded' } : { status: 429, code: 'rate_limited' };
 }
 
 async function callClaude({ image, mediaType, prompt }) {
