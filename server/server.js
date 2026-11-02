@@ -66,6 +66,26 @@ function extractJson(text) {
   return null;
 }
 
+// Models sometimes wrap the object: [{...}] or {"result": {...}}. Unwrap to the object that has `net`.
+function unwrap(data) {
+  for (let i = 0; i < 3 && data; i++) {
+    if (Array.isArray(data)) { data = data.find(x => x && typeof x === 'object') || null; continue; }
+    if (typeof data !== 'object' || data.net) break;
+    const inner = Object.values(data).find(v => v && typeof v === 'object' && (Array.isArray(v) || v.net));
+    if (!inner) break;
+    data = inner;
+  }
+  return data;
+}
+
+// One log line per analysis: enough to see why the page could not draw it, without logging the content.
+function shape(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return `shape=${Array.isArray(data) ? 'array' : typeof data}`;
+  const faces = data.net && data.net.faces;
+  const notes = String(data.readingNotes || '').replace(/\s+/g, ' ').slice(0, 160);
+  return `keys=${Object.keys(data).join(',')} solid=${data.solid} faces=${Array.isArray(faces) ? faces.length : typeof faces} options=${Array.isArray(data.options) ? data.options.length : typeof data.options} notes="${notes}"`;
+}
+
 function send(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body), 'cache-control': 'no-store' });
@@ -130,9 +150,10 @@ async function callClaude({ image, mediaType, prompt }) {
 // Gemini generateContent (REST). Free tier: data may be used by Google to improve its products.
 async function callGemini({ image, mediaType, prompt }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI.model)}:generateContent`;
-  const r = await fetch(url, {
+  const signal = AbortSignal.timeout(UPSTREAM_TIMEOUT);       // one deadline for both attempts
+  const request = {
     method: 'POST',
-    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT),
+    signal,
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey() },
     body: JSON.stringify({
       contents: [{
@@ -148,7 +169,13 @@ async function callGemini({ image, mediaType, prompt }) {
         thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING || 'low' },   // high thinking ran out of tokens (MAX_TOKENS)
       },
     }),
-  });
+  };
+  let r = await fetch(url, request);
+  if (r.status === 503) {                                    // free tier "high demand": usually gone a moment later
+    console.error('gemini 503, retrying once');
+    await new Promise(ok => setTimeout(ok, 2000));
+    r = await fetch(url, request);
+  }
   const body = await r.json();
   if (!r.ok) throw upstreamError('gemini', r, body);
   const cand = (body.candidates || [])[0];
@@ -175,8 +202,9 @@ async function analyze(req, res) {
 
   try {
     const text = await AI.call({ image, mediaType, prompt: buildPrompt(String(memo).slice(0, 1000)) });
-    const data = extractJson(text);
-    if (!data) return send(res, 502, { error: 'invalid_json' });
+    const data = unwrap(extractJson(text));
+    if (!data) { console.error('invalid_json, text starts:', JSON.stringify(text.slice(0, 200))); return send(res, 502, { error: 'invalid_json' }); }
+    console.log('analysis', shape(data));
     // The photo is not stored anywhere: it only passes through this request.
     return send(res, 200, { data });
   } catch (e) {
