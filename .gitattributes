@@ -1,0 +1,3 @@
+# Keep LF everywhere: these files run on Linux (EC2), CRLF breaks bash/systemd/nginx.
+* text=auto eol=lf
+*.png binary

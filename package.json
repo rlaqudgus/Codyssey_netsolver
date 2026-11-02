@@ -1,0 +1,10 @@
+{
+  "name": "net-solver",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js --static"
+  },
+  "engines": { "node": ">=18" }
+}

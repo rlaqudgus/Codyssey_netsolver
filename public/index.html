@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전개도 해설기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fbfbf8; --sheet:#ffffff; --ink:#1c1c1c; --graphite:#6b6b66; --rule:#dcdcd4;
+  --pen:#d3122f; --pen-soft:rgba(211,18,47,.08); --ok:#1d6b3a; --warn-bg:#fff4d6; --warn:#7a5200;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#1b1c1e; --sheet:#25272a; --ink:#ececea; --graphite:#a3a39c; --rule:#3a3c40;
+  --pen:#ff5468; --pen-soft:rgba(255,84,104,.12); --ok:#5fc98a; --warn-bg:#3a3020; --warn:#f2c46b; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#1b1c1e; --sheet:#25272a; --ink:#ececea; --graphite:#a3a39c; --rule:#3a3c40;
+  --pen:#ff5468; --pen-soft:rgba(255,84,104,.12); --ok:#5fc98a; --warn-bg:#3a3020; --warn:#f2c46b; color-scheme:dark;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 "IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:780px;margin:0 auto;padding:22px 18px 56px}
+h1{font:900 clamp(1.7rem,6.5vw,2.5rem)/1.15 "Noto Serif KR",serif;margin:4px 0 6px;letter-spacing:-.01em}
+.lede{color:var(--graphite);margin:0 0 18px;max-width:60ch}
+h2{font:600 1.15rem/1.4 "Noto Serif KR",serif;margin:30px 0 10px}
+button{font:inherit;font-size:.93rem;border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:999px;padding:8px 16px;cursor:pointer}
+button.primary{background:var(--ink);color:var(--sheet)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,.drop:focus-within{outline:3px solid var(--pen);outline-offset:2px}
+.drop{display:flex;gap:16px;align-items:center;background:var(--sheet);border:2px dashed var(--rule);border-radius:14px;padding:16px;cursor:pointer;position:relative}
+.drop.has{border-style:solid}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop img{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid var(--rule);display:none}
+.drop.has img{display:block}
+.drop .big{font:600 1.05rem "Noto Serif KR",serif}
+.drop .small{color:var(--graphite);font-size:.88rem}
+textarea{width:100%;margin-top:10px;font:inherit;font-size:.92rem;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);border-radius:10px;padding:10px;min-height:44px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.status{color:var(--graphite);font-size:.92rem}
+.err{color:var(--pen)}
+.answer{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:26px;padding:14px 18px;background:var(--sheet);border-left:4px solid var(--pen);border-radius:4px 12px 12px 4px}
+.answer .big{font:900 2rem/1 "Noto Serif KR",serif;color:var(--pen)}
+.answer .sub{color:var(--graphite);font-size:.92rem}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:.92rem}
+.recog{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.recog figure{margin:0;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:8px}
+.recog img,.recog canvas{width:100%;height:auto;display:block;border-radius:6px;background:#fff}
+.recog figcaption{font-size:.82rem;color:var(--graphite);margin-top:4px}
+.viewer{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+#gl{display:block;width:100%;height:min(60vh,460px);touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+.hint{position:absolute;left:12px;top:10px;font-size:.8rem;color:var(--graphite);pointer-events:none}
+.controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;padding:12px 14px;border-top:1px solid var(--rule)}
+.controls label{font-size:.9rem;color:var(--graphite);display:flex;align-items:center;gap:10px;flex:1 1 220px}
+input[type=range]{flex:1;accent-color:var(--pen)}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.opt{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:8px;cursor:pointer;text-align:left;color:var(--ink);font-size:.85rem}
+.opt[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt canvas{width:100%;height:auto;display:block;background:#fff;border-radius:6px}
+.opt .cap{color:var(--graphite);font-size:.76rem;margin:4px 0 2px}
+.opt .num{font:600 1rem "Noto Serif KR",serif;margin-top:4px}
+.mark{position:absolute;right:8px;top:4px;font:900 1.7rem/1 "Noto Serif KR",serif;color:var(--pen)}
+.panel{margin-top:14px;background:var(--sheet);border-left:3px solid var(--pen);border-radius:4px 10px 10px 4px;padding:14px 16px}
+.panel h3{margin:0 0 6px;font:600 1.05rem "Noto Serif KR",serif}
+.panel p{margin:0 0 6px}
+ol.steps{padding-left:1.3em;margin:0} ol.steps li{margin-bottom:8px}
+.note{color:var(--graphite);font-size:.86rem}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>전개도 해설기</h1>
+  <p class="lede">전개도 문제를 사진으로 찍어 올리면 접은 입체를 3D로 만들고, 각 보기를 실제 모형과 겹쳐 보며 정답과 이유를 보여 줍니다. 정사면체·정육면체·정팔면체 전개도를 지원합니다.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="image/*" aria-label="문제 사진 선택">
+    <img id="thumb" alt="선택한 사진">
+    <div><div class="big" id="dropTitle">문제 사진 올리기</div>
+      <div class="small" id="dropSub">카메라로 찍거나 앨범에서 고르세요. 전개도와 보기가 모두 나오게 찍어 주세요.</div></div>
+  </label>
+  <textarea id="memo" placeholder="(선택) 인식이 틀렸을 때 바로잡을 내용. 예: 왼쪽 아래 면의 검은 부분은 오른쪽 위 꼭짓점에 있음"></textarea>
+  <div class="row">
+    <button class="primary" id="go" disabled>분석하기</button>
+    <button id="stop" hidden>멈추기</button>
+    <button id="demo">예시 문제로 보기</button>
+    <span class="status" id="status" aria-live="polite"></span>
+  </div>
+
+  <section id="result" hidden>
+    <div class="answer"><span class="big" id="ansBig"></span><span id="ansText"></span><span class="sub" id="ansSub"></span></div>
+    <div id="warns"></div>
+
+    <h2>인식한 전개도</h2>
+    <div class="recog">
+      <figure><img id="recPhoto" alt="원본 사진"><canvas id="recNone" width="10" height="10" hidden></canvas><figcaption>원본 사진</figcaption></figure>
+      <figure><canvas id="recNet" width="512" height="512"></canvas><figcaption>AI가 읽은 전개도. 사진과 다르면 위 메모에 적고 다시 분석하세요.</figcaption></figure>
+    </div>
+
+    <h2>3D 모형</h2>
+    <div class="viewer">
+      <canvas id="gl" aria-label="접은 입체 3D 모형, 끌어서 회전"></canvas>
+      <div class="hint">끌어서 회전 · 휠로 확대</div>
+      <div class="controls">
+        <label>펼침<input id="fold" type="range" min="0" max="100" value="0" aria-label="접힘 정도">접힘</label>
+        <button class="primary" id="play">접기</button>
+        <button id="reset">처음 시점</button>
+        <button id="lbl" aria-pressed="true">면 이름</button>
+      </div>
+    </div>
+
+    <h2>보기 대조</h2>
+    <p class="note">각 카드의 위는 문제의 보기, 아래는 실제 모형에서 같은 면을 같은 자리에 놓았을 때의 모습입니다. 두 그림이 같아야 만들 수 있는 보기입니다. 카드를 누르면 모형이 그 방향으로 돌아갑니다.</p>
+    <div class="opts" id="opts"></div>
+    <div class="panel" id="panel" aria-live="polite"><h3>보기를 눌러 확인하세요</h3><p>해당 면만 밝게 표시되고 나머지 면은 어둡게 처리됩니다.</p></div>
+
+    <h2>풀이 원리</h2>
+    <ol class="steps" id="principle"></ol>
+    <p class="note" id="question"></p>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/engine.js"></script>
+<script>
+(function(){
+const EXAMPLE={"solid": "tetrahedron", "questionType": "can", "question": "전개도를 접어 만든 정사면체를 보았을 때 나올 수 있는 모양을 고르는 문제", "net": {"faces": [{"id": "가", "lattice": [[0, 2], [0, 1], [1, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[1, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5]]}]}, {"id": "나", "lattice": [[0, 1], [1, 0], [1, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]}]}, {"id": "다", "lattice": [[0, 0], [1, 0], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 0, 1], [0.5, 0, 0.5], [0, 0.5, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}, {"id": "라", "lattice": [[1, 0], [2, 0], [1, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[1, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}]}, "options": [{"label": "①", "faces": [{"pts": [[-1.732, 0], [0, -1], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[1, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}, {"pts": [[0, -1], [1.732, 0], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]}]}], "verdict": false, "reason": "원 면의 검은 부분은 가운데 면과 맞닿는 모서리 끝에 있어야 하는데, 보기는 반대편 꼭짓점이 검습니다."}, {"label": "②", "faces": [{"pts": [[-1.732, 0], [0, -1], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]}]}, {"pts": [[0, -1], [1.732, 0], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 0, 1], [0.5, 0, 0.5], [0, 0.5, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}], "verdict": false, "reason": "검은 위치는 맞지만 실제 배치와 좌우가 뒤집힌 거울상입니다."}, {"label": "③", "faces": [{"pts": [[-1.732, 0], [0, -1], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 1, 0], [0.5, 0.5, 0], [0, 0.5, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}, {"pts": [[0, -1], [1.732, 0], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 0, 1], [0.5, 0, 0.5], [0, 0.5, 0.5]]}]}], "verdict": true, "reason": "면 가와 면 다는 접으면 BD·AD 모서리로 붙고, 검은 부분의 위치와 방향이 모두 보기와 같습니다."}, {"label": "④", "faces": [{"pts": [[-1.732, 0], [0, -1], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 1, 0], [0.5, 0.5, 0], [0, 0.5, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}, {"pts": [[0, -1], [1.732, 0], [0, 1]], "pattern": [{"t": "poly", "fill": "black", "p": [[0, 0, 1], [0.5, 0, 0.5], [0, 0.5, 0.5]]}, {"t": "circle", "c": [0.3333, 0.3333, 0.3334], "r": 0.2887, "fill": "white"}]}], "verdict": false, "reason": "두 원 면이 만나는 모서리에서 한쪽 면의 검은 부분은 모서리 반대편 꼭짓점에 있어 두 검은 부분이 동시에 모서리 양 끝에 올 수 없습니다."}], "answer": "③", "principle": ["바깥 꼭짓점 세 개가 한 점으로 모여 떨어진 면끼리도 붙습니다.", "각 면의 검은 부분이 어느 꼭짓점에 있는지 확인합니다.", "맞닿는 모서리 기준으로 검은 부분의 위치를 비교합니다.", "위치가 맞아도 좌우가 뒤집힌 거울상인지 확인합니다."], "confidence": "high", "readingNotes": ""};
+const $=id=>document.getElementById(id);
+const E=window.NetEngine;
+
+/* ---------------- upload & analyze ---------------- */
+let file=null,photoURL=null,ctl=null,model=null,timer=null,accessCode='';
+try{accessCode=localStorage.getItem('net-code')||'';}catch(e){}
+const fileIn=$('file');
+fileIn.addEventListener('change',()=>{
+  file=fileIn.files&&fileIn.files[0]; if(!file) return;
+  const r=new FileReader(); r.onload=()=>{photoURL=r.result;$('thumb').src=photoURL;$('drop').classList.add('has');
+    $('dropTitle').textContent='사진을 골랐습니다';$('dropSub').textContent='다른 사진을 고르려면 다시 누르세요.';$('go').disabled=false;}; r.readAsDataURL(file);
+});
+function shrink(dataURL,max=1568){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{
+  const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');
+  c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+  res(c.toDataURL('image/jpeg',.88).split(',')[1]);};img.onerror=()=>rej({code:'image_rejected'});img.src=dataURL;});}
+const ERR={code_required:'접근 코드가 맞지 않습니다.',rate_limited:'요청이 많습니다. 잠시 후 다시 시도하세요.',too_large:'사진이 너무 큽니다. 다시 찍어 올려 주세요.',
+  image_rejected:'이 사진은 읽을 수 없습니다. JPG나 PNG로 다시 찍어 올려 주세요.',invalid_json:'분석 결과를 해석하지 못했습니다. 다시 분석해 주세요.',
+  upstream_error:'분석 서버에 문제가 생겼습니다. 잠시 후 다시 시도하세요.',not_configured:'서버에 API 키가 설정되지 않았습니다.'};
+function setStatus(t,err){$('status').textContent=t;$('status').className='status'+(err?' err':'');}
+async function analyze(){
+  const image=await shrink(photoURL);
+  const r=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({image,mediaType:'image/jpeg',memo:$('memo').value.trim().slice(0,1000),code:accessCode}),signal:ctl.signal});
+  const j=await r.json().catch(()=>({error:'upstream_error'}));
+  if(r.status===401){const c=window.prompt('이 사이트는 접근 코드가 필요합니다. 코드를 입력하세요.');if(!c)throw {code:'code_required'};
+    accessCode=c.trim();try{localStorage.setItem('net-code',accessCode);}catch(e){}return analyze();}
+  if(!r.ok)throw {code:j.error||'upstream_error'};
+  return j.data;
+}
+$('go').addEventListener('click',async()=>{
+  if(!file) return;
+  ctl=new AbortController(); $('go').disabled=true; $('stop').hidden=false;
+  const t0=Date.now(); setStatus('사진을 읽는 중…');
+  timer=setInterval(()=>setStatus('사진을 읽고 풀이하는 중… '+Math.round((Date.now()-t0)/1000)+'초 (보통 1~2분)'),1000);
+  try{ const data=await analyze(); clearInterval(timer); setStatus(''); show(data,photoURL); }
+  catch(e){ clearInterval(timer);
+    if(e&&e.name==='AbortError') setStatus('분석을 멈췄습니다.');
+    else setStatus(ERR[e&&e.code]||('결과를 그리지 못했습니다'+(e&&e.message?': '+e.message:'.')),true); }
+  finally{ $('go').disabled=!file; $('stop').hidden=true; }
+});
+$('stop').addEventListener('click',()=>ctl&&ctl.abort());
+$('demo').addEventListener('click',()=>{setStatus('');show(EXAMPLE,null);});
+
+/* ---------------- result ---------------- */
+function validate(d){
+  if(!d||typeof d!=='object') throw new Error('형식 오류');
+  if(!d.net||!Array.isArray(d.net.faces)||d.net.faces.length<4) throw new Error('전개도를 찾지 못했습니다');
+  if(!Array.isArray(d.options)) d.options=[];
+}
+function show(data,photo){
+  validate(data);
+  model=E.build(data);
+  const res=$('result'); res.hidden=false;
+  // recognized net
+  const rc=$('recNet'),rx=rc.getContext('2d'); rx.clearRect(0,0,512,512); rx.drawImage(model.tex,0,0,512,512);
+  rx.fillStyle='#d3122f'; rx.font='600 26px sans-serif'; rx.textAlign='center'; rx.textBaseline='middle';
+  model.faces.forEach(f=>{const c=f.px.reduce((s,p)=>[s[0]+p[0]/f.px.length,s[1]+p[1]/f.px.length],[0,0]);
+    rx.save(); rx.fillStyle='rgba(255,255,255,.85)'; rx.beginPath(); rx.arc(c[0]/2,c[1]/2,17,0,7); rx.fill(); rx.restore(); rx.fillText(f.id,c[0]/2,c[1]/2+1);});
+  const pf=$('recPhoto'); pf.closest('figure').hidden=!photo; if(photo) pf.src=photo;
+  // decide answer from model comparison
+  const opts=model.options, scored=opts.filter(o=>o.best);
+  const want=data.questionType==='cannot'?'cannot':'can';
+  let pick=null;
+  if(scored.length){ pick=scored.reduce((a,b)=>want==='can'?(b.best.score<a.best.score?b:a):(b.best.score>a.best.score?b:a)); }
+  const aiAns=String(data.answer||'').trim();
+  const pickLabel=pick?pick.label:aiAns;
+  $('ansBig').textContent=pickLabel||'?';
+  $('ansText').textContent='정답';
+  const agree=pick&&aiAns&&aiAns.replace(/\s/g,'')===pick.label.replace(/\s/g,'');
+  $('ansSub').textContent=pick?(agree?'3D 모형 대조와 AI 풀이가 일치합니다.':'3D 모형 대조 결과입니다.'):'AI 풀이 결과입니다.';
+  const W=[...model.warnings];
+  if(pick&&aiAns&&!agree) W.unshift(`AI 풀이(${aiAns})와 3D 모형 대조(${pick.label})가 다릅니다. 아래 ‘인식한 전개도’가 사진과 같은지 먼저 확인하세요.`);
+  if(scored.length>1){const s=scored.map(o=>o.best.score).sort((a,b)=>a-b); const gap=want==='can'?s[1]-s[0]:s[s.length-1]-s[s.length-2]; if(gap<.015) W.push('보기끼리 차이가 작아 대조 결과의 확신이 낮습니다. 보기 그림을 직접 비교해 보세요.');}
+  if(data.confidence==='low') W.push('사진 판독의 확신이 낮습니다.');
+  if(data.readingNotes) W.push('판독 메모: '+data.readingNotes);
+  $('warns').innerHTML=''; W.forEach(t=>{const d=document.createElement('div');d.className='warn';d.textContent=t;$('warns').appendChild(d);});
+  // options
+  const oe=$('opts'); oe.innerHTML='';
+  opts.forEach((o,i)=>{
+    const b=document.createElement('button'); b.className='opt'; b.setAttribute('aria-pressed','false');
+    const ok=o===pick? want==='can' : (pick? want!=='can' : !!o.aiVerdict);
+    const mk=document.createElement('span'); mk.className='mark'; mk.textContent=ok?'○':'✕'; b.appendChild(mk);
+    const c1=document.createElement('div'); c1.className='cap'; c1.textContent='문제의 보기'; b.appendChild(c1); b.appendChild(o.own);
+    const c2=document.createElement('div'); c2.className='cap'; c2.textContent=o.pred?'실제 모형에서':'대응하는 면 배치 없음'; b.appendChild(c2);
+    if(o.pred) b.appendChild(o.pred);
+    const n=document.createElement('div'); n.className='num'; n.textContent='보기 '+o.label; b.appendChild(n);
+    b.addEventListener('click',()=>{[...oe.children].forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); focusOpt(o,ok);});
+    oe.appendChild(b);
+  });
+  $('panel').innerHTML='<h3>보기를 눌러 확인하세요</h3><p>해당 면만 밝게 표시되고 나머지 면은 어둡게 처리됩니다.</p>';
+  const pl=$('principle'); pl.innerHTML=''; (data.principle||[]).forEach(t=>{const li=document.createElement('li');li.textContent=t;pl.appendChild(li);});
+  $('question').textContent=data.question?('문제: '+data.question):'';
+  viewer.load(model);
+  try{ localStorage.setItem('net-last',JSON.stringify({data,photo:null,at:Date.now()})); }catch(e){}
+  res.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+}
+function focusOpt(o,ok){
+  const p=$('panel'); p.innerHTML='';
+  const h=document.createElement('h3'); h.textContent='보기 '+o.label+(ok?': 만들 수 있음':': 만들 수 없음'); h.style.color=ok?'var(--ok)':'var(--pen)'; p.appendChild(h);
+  if(o.reason){const q=document.createElement('p');q.textContent=o.reason;p.appendChild(q);}
+  if(o.best){const q=document.createElement('p');q.className='note';
+    const ids=o.best.map.map(x=>model.faces[x.face].id).join(', ');
+    q.textContent=`모형에서 면 ${ids}를 보기와 같은 자리에 놓은 모습입니다. 위아래 두 그림을 비교해 보세요.`; p.appendChild(q);
+    viewer.focus(o);}
+}
+
+/* ---------------- 3D viewer ---------------- */
+const viewer=(function(){
+  const canvas=$('gl'); let renderer=null,scene,camera,outer,inner,lights;
+  let parts=[],m=null,fold=0,foldTarget=0,qTarget=null,camDist=5,showLabels=true;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const qBase=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
+  const qStart=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.42,.32,0)).multiply(qBase);
+  function init(){
+    renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+    scene=new THREE.Scene(); camera=new THREE.PerspectiveCamera(35,1,.05,200);
+    scene.add(new THREE.AmbientLight(0xffffff,.66)); const dl=new THREE.DirectionalLight(0xffffff,.45); dl.position.set(2,3,4); scene.add(dl);
+    outer=new THREE.Group(); inner=new THREE.Group(); outer.add(inner); scene.add(outer);
+    let drag=null;
+    canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};qTarget=null;canvas.setPointerCapture(e.pointerId);});
+    canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};
+      const a=Math.hypot(dx,dy)*.01;if(!a)return;outer.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(dy,dx,0).normalize(),a));});
+    const end=()=>drag=null; canvas.addEventListener('pointerup',end); canvas.addEventListener('pointercancel',end);
+    canvas.addEventListener('wheel',e=>{e.preventDefault();camDist=Math.min(camDist*3,Math.max(camDist/3,camDist*(1+e.deltaY*.001)));},{passive:false});
+    $('fold').addEventListener('input',()=>{fold=foldTarget=$('fold').value/100;sync();});
+    $('play').addEventListener('click',()=>{foldTarget=foldTarget>.5?0:1;sync();});
+    $('reset').addEventListener('click',()=>{qTarget=qStart.clone();dim(null);[...$('opts').children].forEach(x=>x.setAttribute('aria-pressed','false'));});
+    $('lbl').addEventListener('click',()=>{showLabels=!showLabels;$('lbl').setAttribute('aria-pressed',String(showLabels));});
+    requestAnimationFrame(tick);
+  }
+  function sync(){$('play').textContent=foldTarget>.5?'펼치기':'접기';}
+  function label(text){
+    const c=document.createElement('canvas'),w=Math.max(96,40+text.length*44);c.width=w;c.height=96;const x=c.getContext('2d');
+    x.fillStyle='rgba(211,18,47,.92)';const r=40;x.beginPath();x.moveTo(r+4,8);x.arcTo(w-4,8,w-4,88,r);x.arcTo(w-4,88,4,88,r);x.arcTo(4,88,4,8,r);x.arcTo(4,8,w-4,8,r);x.fill();
+    x.fillStyle='#fff';x.font='600 52px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,w/2,50);
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.renderOrder=10;s.userData.ar=w/96;return s;
+  }
+  function load(model){
+    if(!renderer) init();
+    parts.forEach(p=>{inner.remove(p.front,p.back,p.edge,p.lab);p.front.geometry.dispose();});
+    parts=[]; m=model;
+    const tex=new THREE.CanvasTexture(m.tex); tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+    let ext=0; m.faces.forEach(f=>f.pts.forEach(p=>m.faces.forEach(g=>g.pts.forEach(q=>ext=Math.max(ext,Math.hypot(p[0]-q[0],p[1]-q[1]))))));
+    camDist=ext*2.3; m.size=ext;
+    m.faces.forEach((f,i)=>{
+      const pos=[],uv=[];const n=f.pts.length;
+      for(let k=1;k<n-1;k++)[0,k,k+1].forEach(j=>{pos.push(f.pts[j][0],0,-f.pts[j][1]);uv.push(...f.uv[j]);});
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();
+      const po={polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1};
+      const front=new THREE.Mesh(g,new THREE.MeshLambertMaterial(Object.assign({map:tex,side:THREE.FrontSide},po)));
+      const back=new THREE.Mesh(g,new THREE.MeshBasicMaterial(Object.assign({color:0xcfc9bb,side:THREE.BackSide},po)));
+      const eg=new THREE.BufferGeometry().setFromPoints(f.pts.map(p=>new THREE.Vector3(p[0],0,-p[1])));
+      const edge=new THREE.LineLoop(eg,new THREE.LineBasicMaterial({color:0x222222}));
+      [front,back,edge].forEach(o=>{o.matrixAutoUpdate=false;inner.add(o);});
+      const lab=label(f.id);const sz=ext*.07;lab.scale.set(sz*lab.userData.ar,sz,1);inner.add(lab);
+      const c=f.pts.reduce((s,p)=>[s[0]+p[0]/n,s[1]+p[1]/n],[0,0]);
+      parts.push({front,back,edge,lab,c3:[c[0],0,-c[1]]});
+    });
+    fold=0;foldTarget=0;$('fold').value=0;sync();outer.quaternion.copy(qStart);qTarget=null;
+  }
+  function apply(t){
+    const M=m.matrices(t);let cx=0,cy=0,cz=0,cnt=0;
+    parts.forEach((p,i)=>{const mm=new THREE.Matrix4().fromArray(M[i]);[p.front,p.back,p.edge].forEach(o=>o.matrix.copy(mm));
+      m.faces[i].pts.forEach(q=>{const w=E.ap4(M[i],[q[0],0,-q[1]]);cx+=w[0];cy+=w[1];cz+=w[2];cnt++;});
+      const c=E.ap4(M[i],p.c3),nrm=[M[i][4],M[i][5],M[i][6]];const o=m.size*.03;
+      p.lab.position.set(c[0]+nrm[0]*o,c[1]+nrm[1]*o,c[2]+nrm[2]*o);p.lab.visible=showLabels;});
+    inner.position.set(-cx/cnt,-cy/cnt,-cz/cnt);
+  }
+  function dim(ids){parts.forEach((p,i)=>{const on=!ids||ids.includes(i);p.front.material.color.setHex(on?0xffffff:0x6f6f6f);p.back.material.color.setHex(on?0xcfc9bb:0x6a675f);});}
+  function focus(o){
+    const cfg=o.best;foldTarget=1;sync();
+    const idx=cfg.map.map(x=>x.face);dim(idx);
+    const v=new THREE.Vector3();idx.forEach(i=>v.add(new THREE.Vector3(...m.faces[i].normal)));v.normalize();
+    const of=o.faces[0];const pa=m.vpos[cfg.vm[of.vid[0]]],pb=m.vpos[cfg.vm[of.vid[1]]];
+    const e=new THREE.Vector3(pb[0]-pa[0],pb[1]-pa[1],pb[2]-pa[2]);e.addScaledVector(v,-e.dot(v)).normalize();
+    const f=new THREE.Vector3().crossVectors(v,e);
+    const phi=Math.atan2(of.pts[1][1]-of.pts[0][1],of.pts[1][0]-of.pts[0][0]);
+    const X=e.clone().multiplyScalar(Math.cos(phi)).addScaledVector(f,-Math.sin(phi));
+    const Y=e.clone().multiplyScalar(Math.sin(phi)).addScaledVector(f,Math.cos(phi));
+    qTarget=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X,Y,v).transpose());
+  }
+  function tick(){
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    if(w&&h&&(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+    camera.position.set(0,0,camDist*Math.max(1,.95/(camera.aspect||1)));
+    if(m){
+      if(fold!==foldTarget){const s=reduce?1:.018;fold+=Math.sign(foldTarget-fold)*Math.min(s,Math.abs(foldTarget-fold));$('fold').value=Math.round(fold*100);}
+      if(qTarget){if(reduce){outer.quaternion.copy(qTarget);qTarget=null;}else{outer.quaternion.slerp(qTarget,.08);if(outer.quaternion.angleTo(qTarget)<.002)qTarget=null;}}
+      apply(fold);
+    }
+    renderer.render(scene,camera);requestAnimationFrame(tick);
+  }
+  return {load,focus};
+})();
+
+/* restore last result */
+try{const s=JSON.parse(localStorage.getItem('net-last')||'null');if(s&&s.data){setStatus('지난 분석 결과를 불러왔습니다.');show(s.data,null);window.scrollTo(0,0);}}catch(e){}
+})();
+</script>
+</body>
+</html>
