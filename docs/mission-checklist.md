@@ -1,6 +1,6 @@
 # 미션 체크리스트 — "내가 만든 웹사이트를 인터넷에 올려 누구나 쓰게 하기"
 
-> 기준일: 2026-11-02 · 프로젝트: 전개도 해설기 (net-solver) · 사이트: **http://43.201.254.210**
+> 기준일: 2026-11-03 (AWS·사이트 재실측) · 프로젝트: 전개도 해설기 (net-solver) · 사이트: **http://43.201.254.210**
 >
 > | 표시 | 뜻 |
 > |:---:|---|
@@ -78,7 +78,7 @@ Node 24.18.1(Cursor 내장)과 Node 20.15.1(RStudio 내장)로 실행.
 |---|---|---|:---:|---|
 | B1 | 아키텍처 다이어그램 | `docs/architecture.(png\|pdf)` 1개. VPC·Subnet·IGW·EC2·SG + 외부→서비스 흐름 | ✅ | [architecture.png](architecture.png): 실제 IP·IGW ID 반영 |
 | B2 | 외부 접속 증빙 | README에 방식(A/B) + URL/IP, 스크린샷 1장+ | ✅ | README에 **(B) `http://43.201.254.210/health`** 기재 + 스크린샷 [img/external-health.png](img/external-health.png) (내 PC 크롬, `OK`) |
-| B3 | 트러블슈팅 보고서 | `docs/troubleshooting.(md\|pdf)`, 6단계 최소 1건 | ✅ | [troubleshooting.md](troubleshooting.md): **실제 사례 3건** (설치 직후 502, 부팅 직후 404, 브라우저 HTTPS 자동 전환으로 시간 초과) |
+| B3 | 트러블슈팅 보고서 | `docs/troubleshooting.(md\|pdf)`, 6단계 최소 1건 | ✅ | [troubleshooting.md](troubleshooting.md): **실제 사례 5건** (설치 직후 502, 부팅 직후 404, 브라우저 HTTPS 자동 전환으로 시간 초과, Gemini 모델 무응답, 출력 한도 초과로 JSON 잘림). 모두 로그·명령 출력 근거 첨부 |
 | B4 | 리소스 정리 체크리스트 | `docs/cleanup-checklist.md` (+선택 Billing 스크린샷) | 🟡 | 생성한 리소스 ID 전부 기록 완료 → **실습 끝나고 삭제 후 근거 채우기** |
 
 ---
@@ -143,7 +143,7 @@ Node 24.18.1(Cursor 내장)과 Node 20.15.1(RStudio 내장)로 실행.
 | t2/t3.micro, Ubuntu/Amazon Linux, EBS 8~10GiB | ✅ | t3.micro / Ubuntu 24.04 / 8GiB gp3 |
 | 키 페어 1개 안전 보관 | ✅ | `net-solver-key` 1개, `~/.ssh`에 본인만 읽기 권한, 저장소 밖 |
 | SSH 소스 제한 유지 | ✅ | `121.135.181.35/32` (집 IP가 바뀌면 SSH만 막힘 → 규칙 수정) |
-| API 키 노출 금지 (프로젝트 고유) | ✅ | `.env` git 제외, 서버에도 키 없음(분석 기능은 꺼진 상태) |
+| API 키 노출 금지 (프로젝트 고유) | ✅ | `.env` git 제외(`git ls-files`에 없음). Gemini 키는 서버 `/opt/net-solver/.env`에만, 소유자 `netsolver`·권한 `600`. 브라우저로는 나가지 않음 |
 | Billing 확인 (권장) | ⬜ | 정리 후 루트로 확인 |
 
 ---
@@ -157,13 +157,41 @@ Node 24.18.1(Cursor 내장)과 Node 20.15.1(RStudio 내장)로 실행.
 
 ---
 
+## F. 부족한 점 · 위험 요소 (2026-11-03 점검)
+
+| # | 항목 | 심각도 | 내용 | 해결 방법 |
+|---|---|:---:|---|---|
+| F1 | 정리 근거 미완 | 🔴 필수 | 미션은 "실습 후 삭제 + 근거"까지 요구. 지금은 리소스 ID만 기록됨 | 평가가 끝나면 "정리해 줘" → 삭제 후 [cleanup-checklist.md](cleanup-checklist.md) 근거 칸과 `docs/img/cleanup-*.png` 채우기 |
+| F2 | 권장 스크린샷 없음 | 🟡 권장 | IAM 권한 탭, 보안 그룹 인바운드, 사이트 화면 스크린샷이 없음 (CLI 출력 근거는 있음) | 콘솔에서 3장 캡처 → `docs/img/` |
+| F3 | 작성자 칸 공란 | 🟡 권장 | `troubleshooting.md`, `cleanup-checklist.md`의 `작성자: ____` | 본인 이름 기입 |
+| F4 | 퍼블릭 IP 변동 | 🟡 주의 | 자동 할당 IP라 인스턴스를 **중지 → 시작**하면 IP가 바뀌어 README·다이어그램이 틀려짐 | 평가 전까지 중지하지 않기 (재부팅은 괜찮음) |
+| F5 | SSH 허용 IP 고정 | 🟡 주의 | 22번은 `121.135.181.35/32`만 허용. 다른 장소에서 시연하면 SSH가 막힘 (웹 80은 영향 없음) | 장소가 바뀌면 SG 규칙을 그때 IP로 수정 |
+| F6 | AI 분석 한도·정확도 | ⚪ 범위 밖 | Gemini 무료는 하루 20회, 인식 정확도가 들쭉날쭉. **미션 평가 항목은 아님** | 시연은 "예시 문제로 보기"(AI 미사용) 위주. 정확도가 필요하면 Claude로 전환 |
+| F7 | 보너스 미수행 | ⚪ 선택 | HTTPS(도메인 필요), Docker 실행 스크린샷 | 원하면 Docker는 바로 진행 가능 |
+
+---
+
+## G. 학습 목표 ↔ 내 결과물 (말로 설명할 때 가리킬 근거)
+
+| 목표 | 한 줄 답 | 가리킬 결과물 |
+|---|---|---|
+| 1. VPC·Subnet·RT·IGW와 흐름 | 격리된 네트워크(VPC) 안의 구역(Subnet)이 RT의 `0.0.0.0/0 → IGW` 덕분에 퍼블릭이 되고, 요청은 인터넷 → IGW → Subnet → SG → EC2로 들어온다 | [architecture.png](architecture.png) ①~④ 화살표, [evidence/aws-resources.txt](evidence/aws-resources.txt)의 RT 경로 |
+| 2. SG vs IAM, 최소 권한 | SG는 **패킷**(누가 어느 포트로 들어오나), IAM은 **AWS API 호출**(누가 무엇을 만들고 지우나). 사고 시 피해 범위를 줄이려고 꼭 필요한 것만 연다 | SG 인바운드 2줄(80 전체, 22 내 IP/32), [iam-policy.json](iam-policy.json), us-east-1 호출 시 `explicit deny` |
+| 3. 외부 요청이 웹 서버까지 닿는 조건 | IGW 연결 + RT 기본 경로 + 퍼블릭 IP + SG 80 허용 + Nginx가 80 대기, 다섯 개가 모두 필요 | README 외부 접속 표, [img/external-health.png](img/external-health.png), 외부에서 3000은 시간 초과 |
+| 4. 트러블슈팅 과정 | 증상 → 가설 → 근거로 검증 → 하나만 고침 → 같은 요청으로 확인 → 재발 방지 | [troubleshooting.md](troubleshooting.md) 실제 사례 5건 |
+| 5. 과금 요인과 정리 순서 | EC2 실행 시간, EBS, 퍼블릭 IPv4/EIP, NAT·ALB·RDS. 의존 관계 역순(EC2 → EBS → EIP → SG → IGW → Subnet/RT → VPC)으로 지운다 | [cleanup-checklist.md](cleanup-checklist.md) 추적표·순서·확인 명령 |
+
+자세한 모범 답안과 꼬리 질문은 [study-guide.md](study-guide.md) 7·8장.
+
+---
+
 ## 제출 직전 최종 점검
 
 - [x] `docs/architecture.png` — 실제 구성(IP·IGW ID)과 일치
 - [x] README에 실제 IP와 선택 방식 (B) 기재
 - [x] `docs/img/`에 외부 접속 스크린샷 (+보너스 시 `docker ps`)
-- [x] `docs/troubleshooting.md`에 **실제 사례** 3건, 6단계 모두 채움
+- [x] `docs/troubleshooting.md`에 **실제 사례** 5건, 6단계 모두 채움
 - [ ] `docs/cleanup-checklist.md` 정리 근거 채움, EC2·EBS·EIP·IGW·VPC 삭제 확인
 - [x] `git status`에 `.env`, `.pem`이 안 보임
-- [ ] Billing 확인, 실습용 액세스 키 삭제
+- [ ] Billing 확인, 실습용 액세스 키 삭제, Gemini 키 삭제
 - [ ] `docs/study-guide.md`의 "말로 설명하기" 5문항을 소리 내어 답해 봄

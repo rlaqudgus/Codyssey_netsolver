@@ -44,7 +44,7 @@
 
 `/api/analyze`라면 ④에서 Nginx가 **같은 컴퓨터 안의** `127.0.0.1:3000`(Node)에 다시 요청한다. 이 두 번째 연결은 **VPC 밖으로 나가지 않으므로 SG와 무관**하다. 그래서 3000번 포트는 SG에서 열 필요가 없고, 열면 안 된다.
 
-Node가 Claude API를 부를 때는 반대 방향(아웃바운드): EC2 → SG 아웃바운드(기본 전체 허용) → RT `0.0.0.0/0 → igw` → 인터넷 → `api.anthropic.com:443`.
+Node가 사진 분석 AI(Gemini API)를 부를 때는 반대 방향(아웃바운드): EC2 → SG 아웃바운드(기본 전체 허용) → RT `0.0.0.0/0 → igw` → 인터넷 → `generativelanguage.googleapis.com:443` (Claude로 바꾸면 `api.anthropic.com:443`).
 
 ### 어디가 빠지면 어떤 증상이 나오나 (트러블슈팅의 뼈대)
 
@@ -98,7 +98,7 @@ Node가 Claude API를 부를 때는 반대 방향(아웃바운드): EC2 → SG �
 |---|---|---|---|
 | IN | 80/tcp | 0.0.0.0/0 | 누구나 웹사이트를 써야 함 |
 | IN | 22/tcp | **내 IP/32** | 관리 통로. 전 세계에 열면 수 분 안에 무차별 대입 공격이 시작됨 |
-| OUT | 전체 | 0.0.0.0/0 | 패키지 설치, Claude API 호출 (기본값) |
+| OUT | 전체 | 0.0.0.0/0 | 패키지 설치, Gemini API 호출 (기본값) |
 | ~~IN~~ | ~~3000~~ | — | **열지 않음**. Nginx가 내부에서 프록시하므로 필요 없음 |
 
 ### EC2 / EBS / 키 페어 / Elastic IP
@@ -213,7 +213,7 @@ Node가 Claude API를 부를 때는 반대 방향(아웃바운드): EC2 → SG �
 | 502와 504의 차이? | 502: 뒤쪽 서버에 연결 못 함/이상한 응답. 504: 연결했지만 제한 시간 안에 응답 없음 |
 | 루트 계정을 쓰면 안 되는 이유? | 모든 권한이고 IAM 정책으로 제한 불가. 유출 시 계정 전체 탈취 |
 | IAM 사용자와 Role 차이? | 사용자는 장기 자격 증명(사람), Role은 맡아서 쓰는 임시 자격 증명(서비스/다른 주체) |
-| EC2가 Claude API를 부르려면 IAM이 필요한가? | 아니다. Anthropic은 AWS 밖의 서비스라 API 키로 인증. IAM은 AWS API에만 해당 |
+| EC2가 Gemini(또는 Claude) API를 부르려면 IAM이 필요한가? | 아니다. Google·Anthropic은 AWS 밖의 서비스라 API 키(`.env`)로 인증. IAM은 AWS API에만 해당 |
 | "중지"하면 과금이 멈추나? | 컴퓨팅 요금은 멈추지만 EBS와 퍼블릭 IP(EIP) 요금은 계속 |
 | Docker에서 `-p 3000:3000`과 `-p 127.0.0.1:3000:3000` 차이? | 앞은 호스트의 모든 인터페이스(외부 포함)에 열림. 뒤는 호스트 내부에서만 접근 |
 | HTTPS를 붙이려면? | 도메인 A 레코드 → EIP, SG에 443 추가, `certbot --nginx`. 인증서는 Let's Encrypt가 도메인 소유를 HTTP로 확인 |
@@ -231,6 +231,6 @@ Node가 Claude API를 부를 때는 반대 방향(아웃바운드): EC2 → SG �
 ec2:* 일부 ← 서울 리전, micro만       S3·RDS·IAM·다른 리전·큰 인스턴스
 .env (서버 안, 600 권한)              Git, Docker 이미지, 브라우저
 
-길:  인터넷 → IGW → RT(0.0.0.0/0) → SG(80) → Nginx → (/api) → Node → (443) → Claude API
+길:  인터넷 → IGW → RT(0.0.0.0/0) → SG(80) → Nginx → (/api) → Node → (443) → Gemini API
 정리: EC2 → EBS → EIP → (NAT/ALB/RDS) → SG → 키페어 → IGW → Subnet/RT → VPC → Billing 확인
 ```

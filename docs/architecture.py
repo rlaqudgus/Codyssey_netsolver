@@ -63,7 +63,7 @@ box(1, 8, 18, 12, "#ffffff", "#333", 1.5); text(10, 17.5, "관리자 PC\n(내 IP
 box(1, 36, 11, 9, "#ffffff", "#333", 1.2); text(6.5, 43, "Internet", 9.5, "bold", ha="center")
 box(142, 18, 23, 14, "#ffffff", "#666", 1.2, "--")
 text(143.5, 30.5, "외부 API (인터넷)", 9, "bold", GRAY)
-text(143.5, 26.5, "api.anthropic.com:443\nHTTPS 아웃바운드", 8.5, color=GRAY)
+text(143.5, 26.5, "Gemini API (Google)\ngenerativelanguage\n.googleapis.com:443", 8.5, color=GRAY)
 
 # Flows
 arrow((10, 62), (8, 45.2), BLUE, 2.4)                    # user -> internet
@@ -74,7 +74,7 @@ arrow((12, 40.5), (14, 40.5), BLUE, 2.4)                 # internet -> igw
 arrow((30, 40.5), (40, 30), BLUE, 2.4)                   # igw -> nginx (through SG)
 ax.text(14.5, 33.5, "② IGW → 라우팅 테이블\n③ SG 80 허용 → Nginx", fontsize=8.5, color=BLUE, va="top", linespacing=1.4,
         bbox=dict(fc="white", ec="none", pad=1.5), zorder=5)
-arrow((86, 26), (142, 25), GRAY, 1.6, (0, (4, 2)), 0.0)  # node -> anthropic
+arrow((86, 26), (142, 25), GRAY, 1.6, (0, (4, 2)), 0.0)  # node -> gemini
 text(94, 19.5, "④ 응답·외부 API 호출은\n0.0.0.0/0 → IGW 경로로 나감", 8.5, color=GRAY)
 
 text(80, -3.2, "3000 포트는 127.0.0.1에만 열려 SG에서도 열지 않음 → 외부에서는 Nginx(80)만 보임  ·  SSH는 내 IP/32만 허용  ·  0.0.0.0/0 전체 포트 허용 규칙 없음",
