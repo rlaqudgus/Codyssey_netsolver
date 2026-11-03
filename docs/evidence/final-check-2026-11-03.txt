@@ -1,0 +1,49 @@
+# 기능 요구사항 최종 점검 (삭제 직전), 2026-11-03 11:28 KST, IAM user net-solver-lab, region ap-northeast-2
+
+## 0. 실행 주체
+arn:aws:iam::<account>:user/net-solver-lab
+
+## 1-1. VPC
+vpc-0ca361fd25c910867	10.0.0.0/16	available
+
+## 1-2. Public Subnet (MapPublicIpOnLaunch)
+subnet-030d49d1a95fe9ff7	10.0.1.0/24	ap-northeast-2a	True
+
+## 1-3. IGW attachment
+vpc-0ca361fd25c910867	available
+
+## 1-4. Route table routes / associated subnet
+10.0.0.0/16	local	active
+0.0.0.0/0	igw-038259e638b1cc5bf	active
+subnet-030d49d1a95fe9ff7
+
+## 2-1. EC2 (in public subnet)
+i-00eb66dc541b0a140	running	t3.micro	subnet-030d49d1a95fe9ff7	43.201.254.210	10.0.1.206
+
+## 3. Security group inbound rules (all)
+tcp	80	80	0.0.0.0/0
+tcp	22	22	121.135.181.35/32
+
+## 4. IAM: other region (us-east-1) -> must be denied
+not authorized to perform this operation. User: arn:aws:iam::<account>:user/net-solver-lab is not authorized to perform: ec2:DescribeVpcs with an explicit deny in an identity-based policy: arn:aws:iam
+## 4. IAM: unrelated service (S3) -> must be denied
+AccessDenied
+
+## 2-2/1-5/2-3/2-4. Inside EC2 over SSH
+ssh login: ubuntu@ip-10-0-1-206
+outbound curl https://example.com -> 200
+nginx: active, net-solver: active
+curl http://localhost -> 200
+listening:
+  0.0.0.0:22
+  0.0.0.0:80
+  127.0.0.1:3000
+  127.0.0.53%lo:53
+  127.0.0.54:53
+  [::]:22
+  [::]:80
+
+## 5. External access from my PC
+(B) GET http://43.201.254.210/health -> OK [200]
+(A) GET http://43.201.254.210/ -> 200
+port 3000 from outside -> 000 (000 = blocked/timeout)
