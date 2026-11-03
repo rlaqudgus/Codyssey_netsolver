@@ -1,0 +1,51 @@
+# 리소스 정리 기록, 시작 2026-11-03 12:09:21 KST, IAM user net-solver-lab, region ap-northeast-2
+
+## 1. EC2 terminate  (12:09:21)
+i-00eb66dc541b0a140	running	shutting-down
+## 2. state after wait (12:09:58)
+i-00eb66dc541b0a140	terminated
+
+## 3. EBS volume vol-0a9640545ec87f5b0 (DeleteOnTermination)  (12:10:18)
+InvalidVolume.NotFound
+vol-0a9640545ec87f5b0' does not exist.
+all volumes in region: 
+
+## 4. Elastic IP: 0 allocated (none were created)
+
+## 5. NAT/ELB/RDS: none created. NAT gateways: 0
+
+## 6. Security group delete  (12:10:28)
+{
+    "Return": true,
+    "GroupId": "sg-0067eb94c6bf9da5c"
+}
+deleted sg-0067eb94c6bf9da5c
+
+## 7. Key pair delete
+True
+deleted key pair net-solver-key
+
+## 8. Internet Gateway detach + delete  (12:10:34)
+detached
+deleted igw-038259e638b1cc5bf
+
+## 9. Route table + subnet  (12:10:39)
+disassociated rtbassoc-0a0e66d0b128a29e3
+deleted rtb-0478e3664a0482fcc
+deleted subnet-030d49d1a95fe9ff7
+
+## 10. VPC delete  (12:10:49)
+deleted vpc-0ca361fd25c910867
+
+## 11. 남은 리소스 확인 (2026-11-03 12:11:11 KST) — [] 또는 0 이면 정상
+EC2 (pending/running/stopping/stopped): []
+EBS volumes:        []
+Elastic IPs:        []
+NAT gateways:       []
+Internet gateways:  [ERROR]:Anerroroccurred(InvalidInternetGatewayID.NotFound)whencallingtheDescribeInternetGatewaysoperation:TheinternetGatewayID'igw-038259e638b1cc5bf'doesnotexist
+Non-default VPCs:   []
+net-solver SGs:     []
+Key pairs:          []
+Snapshots (self):   []
+AMIs (self):        []
+External http://43.201.254.210/health -> 000 (000 = no server)

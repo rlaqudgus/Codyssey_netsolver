@@ -11,7 +11,7 @@ AWS EC2 한 대(서울 리전)에 Nginx + Node로 배포합니다.
 | 항목 | 값 |
 |---|---|
 | **선택한 방식** | **(B) `GET http://<퍼블릭IP>/health` → `200 OK` / `OK`** (참고: (A) 브라우저 `http://<퍼블릭IP>`로도 사이트가 열림) |
-| 접속 주소 | **http://43.201.254.210/health** (사이트: http://43.201.254.210) |
+| 접속 주소 | **http://43.201.254.210/health** (사이트: http://43.201.254.210) — ⚠️ 2026-11-03 실습 종료로 리소스 삭제, 현재는 접속 불가 ([작동 증거](#실제-작동-증거-삭제-전-기록)) |
 | 확인 명령 | `curl -i http://43.201.254.210/health` |
 | 확인 일시 | 2026-11-02 14:54 KST, 외부(내 PC)에서 200 OK 확인 |
 | 결과 스크린샷 | [docs/img/external-health.png](docs/img/external-health.png) (내 PC 크롬에서 `OK` 확인) |
@@ -286,7 +286,7 @@ curl http://<퍼블릭IP>/health                   # 외부 OK
 
 ## 정리
 
-실습이 끝나면 `docs/cleanup-checklist.md` 순서대로 EC2 → EBS → Elastic IP → IGW → VPC를 지우고 근거를 남깁니다.
+**2026-11-03 정리 완료.** [docs/cleanup-checklist.md](docs/cleanup-checklist.md) 순서대로 EC2 → EBS → (Elastic IP 해당 없음) → 보안 그룹 → 키 페어 → IGW → 라우팅 테이블·서브넷 → VPC를 지웠고, 남은 리소스가 모두 `[]`인 것을 확인했습니다 ([삭제 기록](docs/evidence/cleanup-log-2026-11-03.txt)).
 
 ## 알아 둘 점
 

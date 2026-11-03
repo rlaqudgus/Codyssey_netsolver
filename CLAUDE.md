@@ -15,6 +15,7 @@ Internet → IGW → SG (80 open, 22 my IP only) → Nginx :80
 - `/health` → Nginx returns `200 "OK"` itself (no Node involved).
 - `/api/*` → `proxy_pass http://127.0.0.1:3000` (`proxy_read_timeout 300s`, `client_max_body_size 10m`).
 - everything else → files from `/opt/net-solver/public`.
+The live EC2 deployment (43.201.254.210) was torn down on 2026-11-03; see `docs/cleanup-checklist.md`. Analysis errors come back as `200 {error}` after a heartbeat stream (space every 10s) because some client networks reset silent connections at ~45s.
 Port 3000 is never opened in the SG and Node binds to loopback. Node trusts `X-Real-IP` for rate limiting because only Nginx can reach it.
 
 ## Local run
