@@ -4,7 +4,7 @@
 
 AWS EC2 한 대(서울 리전)에 Nginx + Node로 배포합니다.
 
-> 📌 **평가자용 바로가기**: [외부 접속 검증](#외부-접속-검증-제출-정보) · [아키텍처](#아키텍처) · [학습 목표 5개 쉬운 설명](#이-과제로-배운-것-학습-목표-5개-쉽게-설명) · [트러블슈팅](docs/troubleshooting.md) · [정리 체크리스트](docs/cleanup-checklist.md) · [미션 체크리스트](docs/mission-checklist.md)
+> 📌 **평가자용 바로가기**: [외부 접속 검증](#외부-접속-검증-제출-정보) · [실제 작동 증거](#실제-작동-증거-삭제-전-기록) · [아키텍처](#아키텍처) · [학습 목표 5개 쉬운 설명](#이-과제로-배운-것-학습-목표-5개-쉽게-설명) · [트러블슈팅](docs/troubleshooting.md) · [정리 체크리스트](docs/cleanup-checklist.md) · [미션 체크리스트](docs/mission-checklist.md)
 
 ## 외부 접속 검증 (제출 정보)
 
@@ -30,6 +30,23 @@ Content-Type: text/plain
 
 OK
 ```
+
+## 실제 작동 증거 (삭제 전 기록)
+
+> 실습이 끝나 AWS 리소스를 삭제했기 때문에 지금은 위 주소로 접속되지 않습니다. 아래는 **삭제 직전(2026-11-03)** 실제 서버 `http://43.201.254.210`에서 찍은 화면입니다.
+> 기능 요구사항 1~5 점검 결과(명령 출력): [docs/evidence/final-check-2026-11-03.txt](docs/evidence/final-check-2026-11-03.txt)
+
+| # | 장면 | 무엇을 보여 주나 |
+|:---:|---|---|
+| 1 | [외부 `/health`](docs/img/external-health.png) | 내 PC 크롬에서 `OK` (요구사항 5-B) |
+| 2 | [첫 화면](docs/img/site-home.png) | 브라우저로 `http://<퍼블릭IP>` 접속 시 페이지 표시 (요구사항 5-A) |
+| 3 | [예시 문제 풀이](docs/img/site-example.png) | 정사면체 전개도 → 3D 모형 → 보기 대조, 정답 ③ |
+| 4 | [문제 사진 업로드](docs/img/site-upload.png) | [시험용 정육면체 전개도 문제](docs/img/sample-problem.jpg)를 올린 모습 |
+| 5 | [실제 AI 분석 결과](docs/img/site-analysis.png) | EC2 → Gemini API가 사진을 읽고, 페이지가 직접 접어 대조 → 정답 ① (실제 정답과 일치, 55초) |
+
+**실제 AI 분석 결과 (원본 사진 → AI가 읽은 전개도 → 3D 모형 → 보기 대조)**
+
+![실제 분석 결과](docs/img/site-analysis.png)
 
 ## 아키텍처
 
