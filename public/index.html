@@ -155,7 +155,7 @@ async function analyze(){
   const j=await r.json().catch(()=>({error:'upstream_error'}));
   if(r.status===401){const c=window.prompt('이 사이트는 접근 코드가 필요합니다. 코드를 입력하세요.');if(!c)throw {code:'code_required'};
     accessCode=c.trim();try{localStorage.setItem('net-code',accessCode);}catch(e){}return analyze();}
-  if(!r.ok)throw {code:j.error||'upstream_error'};
+  if(!r.ok||j.error)throw {code:j.error||'upstream_error'};  // analysis errors arrive as 200 + {error} (heartbeat stream)
   return j.data;
 }
 $('go').addEventListener('click',async()=>{

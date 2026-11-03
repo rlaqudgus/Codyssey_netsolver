@@ -36,6 +36,7 @@ const MAX_BODY = 10 * 1024 * 1024;                           // matches Nginx cl
 const UPSTREAM_TIMEOUT = 280_000;                            // below Nginx proxy_read_timeout 300s
 const TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_OUTPUT = 16000;
+const HEARTBEAT = 10_000;                                    // keep-alive space while waiting for the model
 const GEMINI_MAX_OUTPUT = 65536;                             // Gemini 3 thinking tokens count against this budget
 
 // Which model reads the photo. AI_PROVIDER=claude|gemini; if unset, use whichever key is present (Claude first).
@@ -202,18 +203,27 @@ async function analyze(req, res) {
   if (image.length > MAX_B64) return send(res, 413, { error: 'too_large' });
   if (!TYPES.includes(mediaType)) return send(res, 400, { error: 'image_rejected' });
 
+  // The model can take over a minute. Some networks cut a connection that stays silent for ~45s,
+  // so send headers now and a space every 10s (JSON.parse ignores leading whitespace).
+  // From here on the outcome is in the body: {data} or {error}.
+  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' });
+  res.write(' ');
+  const beat = setInterval(() => res.write(' '), HEARTBEAT);
+  let result;
   try {
     const text = await AI.call({ image, mediaType, prompt: buildPrompt(String(memo).slice(0, 1000)) });
     const data = unwrap(extractJson(text));
-    if (!data) { console.error('invalid_json, text starts:', JSON.stringify(text.slice(0, 200))); return send(res, 502, { error: 'invalid_json' }); }
-    console.log('analysis', shape(data));
+    if (!data) { console.error('invalid_json, text starts:', JSON.stringify(text.slice(0, 200))); result = { error: 'invalid_json' }; }
+    else { console.log('analysis', shape(data)); result = { data }; }
     // The photo is not stored anywhere: it only passes through this request.
-    return send(res, 200, { data });
   } catch (e) {
-    if (e && e.status && e.code) return send(res, e.status, { error: e.code });
-    console.error('analyze failed:', e && e.name, e && e.message);
-    return send(res, e && e.name === 'TimeoutError' ? 504 : 502, { error: 'upstream_error' });
+    if (!(e && e.status && e.code)) console.error('analyze failed:', e && e.name, e && e.message);
+    result = { error: e && e.code ? e.code : 'upstream_error' };
+  } finally {
+    clearInterval(beat);
   }
+  if (result.error) console.log('analysis error', result.error);
+  res.end(JSON.stringify(result));
 }
 
 // ---- local dev only (--static): what Nginx does on EC2 ----
